@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -73,7 +73,7 @@ import {
   IndianRupee,
   Briefcase,     // Added
   CreditCard,    // Added
-  Heart,User
+  Heart,User,FileCheck,Shield,AlertCircle
 } from 'lucide-react';
 
 // Fix for default Leaflet icon issues in React
@@ -101,6 +101,33 @@ const RedIcon = new L.Icon({
 
 const GreenIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const GreyIcon = new L.Icon({ // For Maintenance / Inactive
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const BlueIcon = new L.Icon({ // For Destination Pointers
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const YellowIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
@@ -187,6 +214,7 @@ const ANALYTICS_DATA = {
 };
 
 const UNIFIED_FLEET_DATA = [
+  // 1. Critical Heavy Truck (Original)
   {
     id: "MH 12 AB 1234",
     driver: "Ramesh Kumar",
@@ -205,7 +233,7 @@ const UNIFIED_FLEET_DATA = [
     routeUpdates: [{ time: "09:00 AM", type: "status", title: "On Route", desc: "Proceeding to Aundh." }],
     status: "active",
     capacityFree: 30,
-    healthScore: 12, // LOW SCORE -> Will show BAD sensor data
+    healthScore: 12,
     healthStatus: "critical",
     nextServiceKm: -200,
     issues: [
@@ -217,8 +245,7 @@ const UNIFIED_FLEET_DATA = [
         { id: "sm2", type: "Coolant Flush", dueDate: "2024-03-21", dueKm: 0, priority: "medium", estimatedCost: 3500 }
     ],
     maintenanceHistory: [
-        { id: "h1", date: "2023-12-15", type: "oil_change", description: "Routine Oil Change", cost: 4500, garage: "Tata Service Hinjewadi", invoiceNumber: "INV-998" },
-        { id: "h2", date: "2023-10-10", type: "tyre_replacement", description: "Rear Left Tyre Replaced", cost: 18000, garage: "MRF Tyres Wakad", invoiceNumber: "INV-776" }
+        { id: "h1", date: "2023-12-15", type: "oil_change", description: "Routine Oil Change", cost: 4500, garage: "Tata Service Hinjewadi", invoiceNumber: "INV-998" }
     ],
     isDelayed: true,
     delayReason: "Vehicle Breakdown",
@@ -226,6 +253,7 @@ const UNIFIED_FLEET_DATA = [
     assistanceIssue: "Engine Failure",
     assistanceStatus: "Pending"
   },
+  // 2. Medium Truck Warning (Original)
   {
     id: "MH 12 CD 5678",
     driver: "Vijay Singh",
@@ -244,7 +272,7 @@ const UNIFIED_FLEET_DATA = [
     routeUpdates: [],
     status: "active",
     capacityFree: 45,
-    healthScore: 54, // MEDIUM SCORE -> Will show AVERAGE sensor data
+    healthScore: 54,
     healthStatus: "warning",
     nextServiceKm: 890,
     issues: [{ id: "i2", description: "Tire pressure low", faultCode: "C0750", severity: "warning", detectedAt: "11:00 AM" }],
@@ -255,6 +283,7 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: true,
     needsAssistance: false
   },
+  // 3. Healthy Light Truck (Original)
   {
     id: "MH 12 IJ 7890",
     driver: "Anil Kapoor",
@@ -273,20 +302,16 @@ const UNIFIED_FLEET_DATA = [
     routeUpdates: [],
     status: "active",
     capacityFree: 65,
-    healthScore: 98, // HIGH SCORE -> Will show PERFECT sensor data
+    healthScore: 98,
     healthStatus: "normal",
     nextServiceKm: 2800,
     issues: [],
-    scheduledMaintenance: [
-        { id: "sm4", type: "General Service", dueDate: "2024-06-01", dueKm: 2800, priority: "low", estimatedCost: 2500 }
-    ],
-    maintenanceHistory: [
-        { id: "h3", date: "2024-01-15", type: "general", description: "First Free Service", cost: 0, garage: "Tata Service Kothrud", invoiceNumber: "INV-001" }
-    ],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
     isDelayed: false,
     needsAssistance: false
   },
-  // ... Include other vehicles from previous list if needed
+  // 4. Maintenance Vehicle (Original)
   {
     id: "MH 12 EF 9012",
     driver: "Sunil Rao",
@@ -315,6 +340,757 @@ const UNIFIED_FLEET_DATA = [
     needsAssistance: true,
     assistanceIssue: "Battery Failure",
     assistanceStatus: "Dispatched"
+  },
+  // 5. Active Heavy Truck - Good Health
+  {
+    id: "MH 14 HG 4521",
+    driver: "Vikram Malhotra",
+    type: "Heavy Truck",
+    vin: "6MGBH96PCPT654638",
+    makeModel: "Ashok Leyland 5525",
+    year: "2023",
+    fuelType: "Diesel",
+    capacity: "55 Tonnes",
+    lastService: "2024-01-15",
+    insuranceExpiry: "2025-03-10",
+    coords: [18.6298, 73.7997],
+    locationName: "Pimpri-Chinchwad",
+    destCoords: [18.5204, 73.8567],
+    destinationName: "Pune Station",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 10,
+    healthScore: 92,
+    healthStatus: "normal",
+    nextServiceKm: 4500,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 6. Delayed Light Truck - Traffic
+  {
+    id: "MH 12 KL 8899",
+    driver: "Suresh Raina",
+    type: "Light Truck",
+    vin: "7NGBH07QDQU765749",
+    makeModel: "Mahindra Bolero Pickup",
+    year: "2021",
+    fuelType: "Diesel",
+    capacity: "1.7 Tonnes",
+    lastService: "2023-11-05",
+    insuranceExpiry: "2024-11-05",
+    coords: [18.5203, 73.8567], // Near Shivajinagar
+    locationName: "Shivajinagar",
+    destCoords: [18.4967, 73.9417],
+    destinationName: "Hadapsar",
+    routeUpdates: [{ time: "11:15 AM", type: "alert", title: "Heavy Traffic", desc: "Congestion on University Road." }],
+    status: "active",
+    capacityFree: 50,
+    healthScore: 78,
+    healthStatus: "normal",
+    nextServiceKm: 1200,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: true,
+    delayReason: "Traffic Congestion",
+    needsAssistance: false
+  },
+  // 7. Critical Warning - Brake Issue
+  {
+    id: "MH 12 XZ 1122",
+    driver: "Deepak Chahar",
+    type: "Medium Truck",
+    vin: "8OHBH18RERV876850",
+    makeModel: "Tata Ultra 1518",
+    year: "2019",
+    fuelType: "Diesel",
+    capacity: "16 Tonnes",
+    lastService: "2023-09-10",
+    insuranceExpiry: "2024-09-10",
+    coords: [18.4575, 73.8508],
+    locationName: "Katraj",
+    destCoords: null,
+    destinationName: null,
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 80,
+    healthScore: 45,
+    healthStatus: "warning",
+    nextServiceKm: 100,
+    issues: [{ id: "i5", description: "Brake pads worn", faultCode: "C0035", severity: "warning", detectedAt: "09:00 AM" }],
+    scheduledMaintenance: [
+        { id: "sm5", type: "Brake Replacement", dueDate: "2024-02-15", dueKm: 100, priority: "high", estimatedCost: 5000 }
+    ],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 8. Idle/Inactive Vehicle
+  {
+    id: "MH 14 BN 6677",
+    driver: "Rajesh Koothrappali",
+    type: "Heavy Truck",
+    vin: "9PHBH29SFSW987961",
+    makeModel: "Volvo FM 420",
+    year: "2022",
+    fuelType: "Diesel",
+    capacity: "40 Tonnes",
+    lastService: "2023-12-20",
+    insuranceExpiry: "2024-12-20",
+    coords: [18.6492, 73.7707],
+    locationName: "Nigdi Warehouse",
+    destCoords: null,
+    destinationName: null,
+    routeUpdates: [],
+    status: "inactive",
+    capacityFree: 100,
+    healthScore: 99,
+    healthStatus: "normal",
+    nextServiceKm: 8000,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 9. Active - Cold Chain
+  {
+    id: "MH 12 CC 3344",
+    driver: "Manoj Bajpayee",
+    type: "Medium Truck",
+    vin: "0QJBH30TGTX098072",
+    makeModel: "Eicher Pro 2049 (Reefer)",
+    year: "2023",
+    fuelType: "CNG",
+    capacity: "5 Tonnes",
+    lastService: "2024-01-02",
+    insuranceExpiry: "2025-01-02",
+    coords: [18.5590, 73.7868],
+    locationName: "Baner",
+    destCoords: [18.5089, 73.9259],
+    destinationName: "Hadapsar Industrial Area",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 0,
+    healthScore: 88,
+    healthStatus: "normal",
+    nextServiceKm: 3000,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 10. Breakdown - Tyre Burst
+  {
+    id: "MH 12 YY 5500",
+    driver: "Ishant Sharma",
+    type: "Heavy Truck",
+    vin: "1RKBH41UHUY109183",
+    makeModel: "Tata Signa 4018",
+    year: "2020",
+    fuelType: "Diesel",
+    capacity: "40 Tonnes",
+    lastService: "2023-10-01",
+    insuranceExpiry: "2024-10-01",
+    coords: [18.4967, 73.9417],
+    locationName: "Hadapsar",
+    destCoords: null,
+    destinationName: null,
+    routeUpdates: [],
+    status: "inactive",
+    capacityFree: 20,
+    healthScore: 30,
+    healthStatus: "critical",
+    nextServiceKm: 500,
+    issues: [{ id: "i6", description: "Tyre Pressure Critical / Burst", faultCode: "C0001", severity: "critical", detectedAt: "11:45 AM" }],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: true,
+    delayReason: "Tyre Burst",
+    needsAssistance: true,
+    assistanceIssue: "Tyre Replacement",
+    assistanceStatus: "Pending"
+  },
+  // 11. Active - Electric LCV
+  {
+    id: "MH 12 EV 9988",
+    driver: "Pooja Hegde",
+    type: "Light Truck",
+    vin: "2SLBH52VIVZ210294",
+    makeModel: "Tata Ace EV",
+    year: "2024",
+    fuelType: "Electric",
+    capacity: "1 Tonne",
+    lastService: "2024-01-20",
+    insuranceExpiry: "2025-01-20",
+    coords: [18.5314, 73.8446],
+    locationName: "Shivajinagar",
+    destCoords: [18.5514, 73.9348],
+    destinationName: "Kharadi IT Park",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 40,
+    healthScore: 96,
+    healthStatus: "normal",
+    nextServiceKm: 5000,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 12. Maintenance - Scheduled
+  {
+    id: "MH 14 ZZ 2211",
+    driver: "K. L. Rahul",
+    type: "Medium Truck",
+    vin: "3TMBH63WJWA321305",
+    makeModel: "Ashok Leyland Partner",
+    year: "2021",
+    fuelType: "Diesel",
+    capacity: "7 Tonnes",
+    lastService: "2023-08-15",
+    insuranceExpiry: "2024-08-15",
+    coords: [18.6261, 73.8139],
+    locationName: "Bhosari MIDC",
+    destCoords: null,
+    destinationName: null,
+    routeUpdates: [],
+    status: "maintenance",
+    capacityFree: 100,
+    healthScore: 70,
+    healthStatus: "warning",
+    nextServiceKm: 0,
+    issues: [],
+    scheduledMaintenance: [
+        { id: "sm6", type: "Quarterly Service", dueDate: "2024-02-12", dueKm: 0, priority: "medium", estimatedCost: 4000 }
+    ],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 13. Active - Long Haul
+  {
+    id: "MH 12 LH 7766",
+    driver: "Jasprit Bumrah",
+    type: "Heavy Truck",
+    vin: "4UNBH74XKXB432416",
+    makeModel: "Mahindra Blazo X 49",
+    year: "2022",
+    fuelType: "Diesel",
+    capacity: "49 Tonnes",
+    lastService: "2023-11-30",
+    insuranceExpiry: "2024-11-30",
+    coords: [18.4230, 73.8690], // Katraj Tunnel area
+    locationName: "Katraj Tunnel",
+    destCoords: [19.0760, 72.8777],
+    destinationName: "Mumbai Port",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 5,
+    healthScore: 89,
+    healthStatus: "normal",
+    nextServiceKm: 2500,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 14. Delayed - Documentation Check
+  {
+    id: "MH 12 QQ 4433",
+    driver: "Shikhar Dhawan",
+    type: "Medium Truck",
+    vin: "5VOBH85YLYC543527",
+    makeModel: "Tata 1512 LPT",
+    year: "2021",
+    fuelType: "Diesel",
+    capacity: "15 Tonnes",
+    lastService: "2023-10-25",
+    insuranceExpiry: "2024-10-25",
+    coords: [18.5793, 73.9089],
+    locationName: "Yerwada",
+    destCoords: [18.5983, 73.7638],
+    destinationName: "Wakad",
+    routeUpdates: [{ time: "10:00 AM", type: "alert", title: "RTO Check", desc: "Stopped for routine documentation check." }],
+    status: "active",
+    capacityFree: 25,
+    healthScore: 85,
+    healthStatus: "normal",
+    nextServiceKm: 1800,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: true,
+    delayReason: "RTO Check",
+    needsAssistance: false
+  },
+  // 15. Active - City Logistics
+  {
+    id: "MH 12 CL 1212",
+    driver: "Hardik Pandya",
+    type: "Light Truck",
+    vin: "6WPBH96ZMZD654638",
+    makeModel: "Ashok Leyland Dost+",
+    year: "2023",
+    fuelType: "Diesel",
+    capacity: "1.5 Tonnes",
+    lastService: "2024-01-05",
+    insuranceExpiry: "2025-01-05",
+    coords: [18.5158, 73.9272],
+    locationName: "Magarpatta City",
+    destCoords: [18.5246, 73.8629],
+    destinationName: "Camp",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 60,
+    healthScore: 94,
+    healthStatus: "normal",
+    nextServiceKm: 3500,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 16. Warning - Oil Leak
+  {
+    id: "MH 14 WW 8989",
+    driver: "Ravindra Jadeja",
+    type: "Heavy Truck",
+    vin: "7XQBH07ANAE765749",
+    makeModel: "Tata Prima 5530.S",
+    year: "2020",
+    fuelType: "Diesel",
+    capacity: "55 Tonnes",
+    lastService: "2023-09-01",
+    insuranceExpiry: "2024-09-01",
+    coords: [18.7323, 73.6749], // Talegaon
+    locationName: "Talegaon",
+    destCoords: [18.6298, 73.7997],
+    destinationName: "Chinchwad",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 15,
+    healthScore: 62,
+    healthStatus: "warning",
+    nextServiceKm: 200,
+    issues: [{ id: "i7", description: "Minor Oil Leak", faultCode: "P0520", severity: "warning", detectedAt: "07:30 AM" }],
+    scheduledMaintenance: [
+        { id: "sm7", type: "Gasket Replacement", dueDate: "2024-02-18", dueKm: 200, priority: "medium", estimatedCost: 2500 }
+    ],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 17. Active - Empty Return
+  {
+    id: "MH 12 ER 3434",
+    driver: "Rohit Sharma",
+    type: "Medium Truck",
+    vin: "8YRBH18BOBF876850",
+    makeModel: "BharatBenz 1217C",
+    year: "2022",
+    fuelType: "Diesel",
+    capacity: "12 Tonnes",
+    lastService: "2023-12-10",
+    insuranceExpiry: "2024-12-10",
+    coords: [18.6161, 73.7286], // Marunji
+    locationName: "Marunji",
+    destCoords: [18.5913, 73.7389],
+    destinationName: "Hinjewadi Warehouse",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 100,
+    healthScore: 90,
+    healthStatus: "normal",
+    nextServiceKm: 6000,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 18. Critical - Transmission
+  {
+    id: "MH 12 TR 6767",
+    driver: "Virat Kohli",
+    type: "Heavy Truck",
+    vin: "9ZSBH29CPCG987961",
+    makeModel: "Eicher Pro 6028",
+    year: "2019",
+    fuelType: "Diesel",
+    capacity: "28 Tonnes",
+    lastService: "2023-07-20",
+    insuranceExpiry: "2024-07-20",
+    coords: [18.4697, 73.8037], // Dhayari
+    locationName: "Dhayari",
+    destCoords: null,
+    destinationName: null,
+    routeUpdates: [],
+    status: "inactive",
+    capacityFree: 50,
+    healthScore: 18,
+    healthStatus: "critical",
+    nextServiceKm: -50,
+    issues: [{ id: "i8", description: "Transmission Failure", faultCode: "P0700", severity: "critical", detectedAt: "Yesterday" }],
+    scheduledMaintenance: [
+        { id: "sm8", type: "Transmission Overhaul", dueDate: "2024-02-10", dueKm: -50, priority: "high", estimatedCost: 60000 }
+    ],
+    maintenanceHistory: [],
+    isDelayed: true,
+    delayReason: "Breakdown",
+    needsAssistance: true,
+    assistanceIssue: "Transmission Stuck",
+    assistanceStatus: "Pending"
+  },
+  // 19. Active - Pharma Logistics
+  {
+    id: "MH 14 PL 2323",
+    driver: "Rishabh Pant",
+    type: "Light Truck",
+    vin: "0ATBH30DQDH098072",
+    makeModel: "Tata Intra V50",
+    year: "2023",
+    fuelType: "Diesel",
+    capacity: "1.5 Tonnes",
+    lastService: "2023-12-05",
+    insuranceExpiry: "2024-12-05",
+    coords: [18.6633, 73.8050], // Moshi
+    locationName: "Moshi",
+    destCoords: [18.6261, 73.8139],
+    destinationName: "Bhosari Pharma Unit",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 20,
+    healthScore: 97,
+    healthStatus: "normal",
+    nextServiceKm: 4200,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 20. Warning - Battery
+  {
+    id: "MH 12 BA 9090",
+    driver: "Shreyas Iyer",
+    type: "Light Truck",
+    vin: "1BUBH41EREI109183",
+    makeModel: "Mahindra Supro",
+    year: "2021",
+    fuelType: "CNG",
+    capacity: "1 Tonne",
+    lastService: "2023-11-15",
+    insuranceExpiry: "2024-11-15",
+    coords: [18.5284, 73.8739], // Pune Station Area
+    locationName: "Pune Station",
+    destCoords: [18.5074, 73.8077],
+    destinationName: "Kothrud",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 60,
+    healthScore: 55,
+    healthStatus: "warning",
+    nextServiceKm: 900,
+    issues: [{ id: "i9", description: "Low Battery Voltage", faultCode: "P0560", severity: "warning", detectedAt: "08:00 AM" }],
+    scheduledMaintenance: [
+        { id: "sm9", type: "Battery Check/Replace", dueDate: "2024-02-25", dueKm: 900, priority: "medium", estimatedCost: 4000 }
+    ],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 21. Active - Express Cargo
+  {
+    id: "MH 12 EX 5656",
+    driver: "Krunal Pandya",
+    type: "Medium Truck",
+    vin: "2CVBH52FSFJ210294",
+    makeModel: "Eicher Pro 2059",
+    year: "2022",
+    fuelType: "Diesel",
+    capacity: "6 Tonnes",
+    lastService: "2023-10-30",
+    insuranceExpiry: "2024-10-30",
+    coords: [18.5089, 73.9260],
+    locationName: "Hadapsar",
+    destCoords: [18.5514, 73.9348],
+    destinationName: "Kharadi",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 10,
+    healthScore: 91,
+    healthStatus: "normal",
+    nextServiceKm: 3800,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 22. Inactive - Driver on Leave
+  {
+    id: "MH 14 DL 1100",
+    driver: "Ajinkya Rahane",
+    type: "Heavy Truck",
+    vin: "3DWBH63GTGK321305",
+    makeModel: "Tata LPT 3718",
+    year: "2018",
+    fuelType: "Diesel",
+    capacity: "37 Tonnes",
+    lastService: "2023-09-20",
+    insuranceExpiry: "2024-09-20",
+    coords: [18.6298, 73.7997],
+    locationName: "Chinchwad Parking",
+    destCoords: null,
+    destinationName: null,
+    routeUpdates: [],
+    status: "inactive",
+    capacityFree: 100,
+    healthScore: 80,
+    healthStatus: "normal",
+    nextServiceKm: 1500,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 23. Active - Heavy Load
+  {
+    id: "MH 12 HL 7878",
+    driver: "Mohammed Shami",
+    type: "Heavy Truck",
+    vin: "4EXBH74HUHL432416",
+    makeModel: "Ashok Leyland 4825",
+    year: "2023",
+    fuelType: "Diesel",
+    capacity: "48 Tonnes",
+    lastService: "2024-01-10",
+    insuranceExpiry: "2025-01-10",
+    coords: [18.4416, 73.8242], // Katraj Bypass
+    locationName: "Katraj Bypass",
+    destCoords: [18.6504, 73.7786],
+    destinationName: "Akurdi",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 5,
+    healthScore: 95,
+    healthStatus: "normal",
+    nextServiceKm: 5500,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 24. Maintenance - Accident Repair
+  {
+    id: "MH 12 AR 4545",
+    driver: "Axar Patel",
+    type: "Medium Truck",
+    vin: "5FYBH85IVIM543527",
+    makeModel: "Tata 1109",
+    year: "2019",
+    fuelType: "Diesel",
+    capacity: "11 Tonnes",
+    lastService: "2023-08-05",
+    insuranceExpiry: "2024-08-05",
+    coords: [18.5204, 73.8567], // Central Pune Garage
+    locationName: "Central Workshop",
+    destCoords: null,
+    destinationName: null,
+    routeUpdates: [],
+    status: "maintenance",
+    capacityFree: 100,
+    healthScore: 10,
+    healthStatus: "critical",
+    nextServiceKm: 0,
+    issues: [{ id: "i10", description: "Bumper Damage & Radiator Leak", faultCode: "ACC-001", severity: "critical", detectedAt: "2 days ago" }],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 25. Active - E-Commerce
+  {
+    id: "MH 12 EC 9900",
+    driver: "Sanju Samson",
+    type: "Light Truck",
+    vin: "6GZBH96JWJN654638",
+    makeModel: "Maruti Suzuki Super Carry",
+    year: "2023",
+    fuelType: "CNG",
+    capacity: "0.7 Tonnes",
+    lastService: "2023-12-25",
+    insuranceExpiry: "2024-12-25",
+    coords: [18.5635, 73.8075], // Aundh
+    locationName: "Aundh",
+    destCoords: [18.5590, 73.7868],
+    destinationName: "Baner",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 30,
+    healthScore: 93,
+    healthStatus: "normal",
+    nextServiceKm: 2200,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 26. Active - Water Tanker
+  {
+    id: "MH 12 WT 2121",
+    driver: "Yuzvendra Chahal",
+    type: "Heavy Truck",
+    vin: "7H0BH07KXKO765749",
+    makeModel: "Tata 1613",
+    year: "2017",
+    fuelType: "Diesel",
+    capacity: "16 Tonnes (Water)",
+    lastService: "2023-11-10",
+    insuranceExpiry: "2024-11-10",
+    coords: [18.4750, 73.8900], // Undri
+    locationName: "Undri",
+    destCoords: [18.4900, 73.9000],
+    destinationName: "Wanowrie",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 0,
+    healthScore: 68,
+    healthStatus: "warning",
+    nextServiceKm: 500,
+    issues: [{ id: "i11", description: "Suspension noise", faultCode: "C0200", severity: "warning", detectedAt: "Yesterday" }],
+    scheduledMaintenance: [
+        { id: "sm10", type: "Suspension Check", dueDate: "2024-03-01", dueKm: 500, priority: "low", estimatedCost: 3000 }
+    ],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 27. Delayed - Client Issue
+  {
+    id: "MH 14 CI 3434",
+    driver: "Kuldeep Yadav",
+    type: "Medium Truck",
+    vin: "8I1BH18LYLP876850",
+    makeModel: "Eicher Pro 3019",
+    year: "2021",
+    fuelType: "Diesel",
+    capacity: "19 Tonnes",
+    lastService: "2023-10-15",
+    insuranceExpiry: "2024-10-15",
+    coords: [18.6504, 73.7786], // Akurdi
+    locationName: "Akurdi",
+    destCoords: [18.6298, 73.7997],
+    destinationName: "Chinchwad",
+    routeUpdates: [{ time: "08:30 AM", type: "alert", title: "Loading Delay", desc: "Client goods not ready for pickup." }],
+    status: "active",
+    capacityFree: 100,
+    healthScore: 86,
+    healthStatus: "normal",
+    nextServiceKm: 2800,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: true,
+    delayReason: "Client Delay at Pickup",
+    needsAssistance: false
+  },
+  // 28. Active - FMCG
+  {
+    id: "MH 12 FM 6565",
+    driver: "Shardul Thakur",
+    type: "Heavy Truck",
+    vin: "9J2BH29MZMQ987961",
+    makeModel: "Tata Signa 2818",
+    year: "2022",
+    fuelType: "Diesel",
+    capacity: "28 Tonnes",
+    lastService: "2024-01-08",
+    insuranceExpiry: "2025-01-08",
+    coords: [18.5983, 73.7638], // Wakad
+    locationName: "Wakad",
+    destCoords: [19.0330, 73.0297],
+    destinationName: "Navi Mumbai",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 10,
+    healthScore: 93,
+    healthStatus: "normal",
+    nextServiceKm: 4000,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 29. Active - Construction Material
+  {
+    id: "MH 12 CM 8787",
+    driver: "Mohammed Siraj",
+    type: "Heavy Truck",
+    vin: "0K3BH30NANS098072",
+    makeModel: "BharatBenz 2823C (Tipper)",
+    year: "2021",
+    fuelType: "Diesel",
+    capacity: "28 Tonnes",
+    lastService: "2023-11-25",
+    insuranceExpiry: "2024-11-25",
+    coords: [18.5400, 73.7500], // Pashan
+    locationName: "Pashan Sus Road",
+    destCoords: [18.5590, 73.7868],
+    destinationName: "Baner Construction Site",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 0,
+    healthScore: 75,
+    healthStatus: "normal",
+    nextServiceKm: 1500,
+    issues: [],
+    scheduledMaintenance: [],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
+  },
+  // 30. Warning - Overheating History
+  {
+    id: "MH 14 OH 5454",
+    driver: "Washington Sundar",
+    type: "Medium Truck",
+    vin: "1L4BH41OBOT109183",
+    makeModel: "Tata 1212 LPT",
+    year: "2018",
+    fuelType: "Diesel",
+    capacity: "12 Tonnes",
+    lastService: "2023-09-30",
+    insuranceExpiry: "2024-09-30",
+    coords: [18.6000, 73.8500], // Vishrantwadi
+    locationName: "Vishrantwadi",
+    destCoords: [18.5293, 73.8505],
+    destinationName: "Shivajinagar",
+    routeUpdates: [],
+    status: "active",
+    capacityFree: 40,
+    healthScore: 50,
+    healthStatus: "warning",
+    nextServiceKm: 300,
+    issues: [{ id: "i12", description: "Engine Temp High", faultCode: "P0217", severity: "warning", detectedAt: "1 hour ago" }],
+    scheduledMaintenance: [
+        { id: "sm11", type: "Coolant Flush & Check", dueDate: "2024-02-20", dueKm: 300, priority: "high", estimatedCost: 2000 }
+    ],
+    maintenanceHistory: [],
+    isDelayed: false,
+    needsAssistance: false
   }
 ];
 
@@ -372,7 +1148,20 @@ function PathFitter({ p1, p2 }) {
     }, [p1, p2, map]);
     return null;
 }
-
+// Helper to generate itinerary data
+const getDisplayUpdates = (vehicle) => {
+  if (!vehicle) return [];
+  if (vehicle.routeUpdates && vehicle.routeUpdates.length > 0) return vehicle.routeUpdates;
+  if (vehicle.destinationName) {
+      return [{
+          time: "09:00 AM",
+          type: "status",
+          title: "Route Assigned",
+          desc: `Trip scheduled from ${vehicle.locationName} to ${vehicle.destinationName}.`
+      }];
+  }
+  return [];
+};
 // Click Handler Component
 const MapClickHandler = ({ isDrawing, onMapClick }) => {
     const map = useMapEvents({
@@ -443,6 +1232,7 @@ const StatusBadge = ({ type }) => {
   );
 };
 
+
 const MetricCard = ({ label, value, icon: Icon, colorClass, onClick, isActive }) => (
   <div 
     onClick={onClick}
@@ -462,6 +1252,26 @@ const MetricCard = ({ label, value, icon: Icon, colorClass, onClick, isActive })
   </div>
 );
 
+// Toggle Switch Component matching the design
+const DashboardSwitch = ({ checked, onCheckedChange, label }) => (
+  <div className="flex items-center gap-2">
+    <div 
+      onClick={() => onCheckedChange(!checked)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+        checked ? 'bg-blue-600' : 'bg-gray-200'
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          checked ? 'translate-x-6' : 'translate-x-1'
+        }`}
+      />
+    </div>
+    <span className="text-xs text-gray-600 font-medium cursor-pointer" onClick={() => onCheckedChange(!checked)}>
+      {label}
+    </span>
+  </div>
+);
 // --- Sub-Views ---
 
 const RoadBlockageView = () => {
@@ -1338,39 +2148,115 @@ const AssistanceView = ({ fleet, setFleet }) => {  // <--- 1. Add props here
     );
 };
 
-const DashboardView = ({ setModalOpen, fleet }) => {
-  const [mapView, setMapView] = useState({ center: PUNE_CENTER, zoom: 12 });
-  const [activeVehicleId, setActiveVehicleId] = useState(null);
+const DashboardView = ({ setModalOpen, fleet, activeVehicleId, onVehicleSelect }) => {
+  const [mapView, setMapView] = useState({ center: [18.5204, 73.8567], zoom: 12 });
+  const [showNotificationVehiclesOnly, setShowNotificationVehiclesOnly] = useState(false);
+  const [routePolyline, setRoutePolyline] = useState([]); 
+  const [isRouting, setIsRouting] = useState(false);
+  const [isInfoExpanded, setIsInfoExpanded] = useState(true);
 
-  // Dynamic Stats
+  // API Key
+  const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZmY2JjMTU3ZWRhZTRlZmJhZGIzYjM4Zjk1YmZkMWZjIiwiaCI6Im11cm11cjY0In0='; 
+
+  // --- Derived Data ---
   const stats = {
-      total: fleet.length,
-      onTime: fleet.filter(v => v.status === 'active' && !v.isDelayed).length,
-      delayed: fleet.filter(v => v.isDelayed).length,
-      completed: 89, // Mock static
-      inTransit: fleet.filter(v => v.status === 'active').length
+    total: fleet.length,
+    onTime: fleet.filter(v => v.status === 'active' && !v.isDelayed).length,
+    delayed: fleet.filter(v => v.isDelayed).length,
+    completed: 89, 
+    inTransit: fleet.filter(v => v.status === 'active').length
   };
 
-  // Dynamic Notifications
-  const notifications = fleet.filter(v => v.isDelayed || v.healthStatus === 'critical').map(v => ({
-      id: v.id,
-      type: v.healthStatus === 'critical' ? 'critical' : 'warning',
-      title: v.healthStatus === 'critical' ? 'HEALTH ALERT' : 'DELAY ALERT',
-      vehicle: v.id,
-      time: 'Just now',
-      loc: v.locationName,
-      coords: v.coords
-  }));
+  const notificationVehicles = fleet.filter(v => v.healthStatus === 'critical' || v.isDelayed || v.healthStatus === 'warning');
+  
+  // Use the prop instead of local state
+  const selectedVehicle = fleet.find(v => v.id === activeVehicleId);
+
+  // --- STRICT FILTERING LOGIC ---
+  const displayedVehicles = useMemo(() => {
+    return showNotificationVehiclesOnly ? notificationVehicles : fleet;
+  }, [showNotificationVehiclesOnly, fleet, notificationVehicles]);
+
+  // --- Auto-Deselect Logic ---
+  useEffect(() => {
+    if (showNotificationVehiclesOnly && activeVehicleId) {
+        const isVisible = notificationVehicles.find(v => v.id === activeVehicleId);
+        if (!isVisible) {
+            onVehicleSelect(null);
+            setRoutePolyline([]);
+        }
+    }
+  }, [showNotificationVehiclesOnly, activeVehicleId, notificationVehicles]);
+
+  // --- Effect: Fetch Route when activeVehicleId changes ---
+  useEffect(() => {
+    if (selectedVehicle && (selectedVehicle.status === 'active' || selectedVehicle.isDelayed || selectedVehicle.healthStatus === 'warning') && selectedVehicle.destCoords) {
+        fetchRoute(selectedVehicle.coords, selectedVehicle.destCoords);
+        // Also center map on selection
+        setMapView({ center: selectedVehicle.coords, zoom: 14 });
+    } else {
+        setRoutePolyline([]);
+    }
+  }, [activeVehicleId]); // Re-run when ID changes
+
+  // --- Routing Logic ---
+  const fetchRoute = async (start, end) => {
+      setIsRouting(true);
+      const startLngLat = `${start[1]},${start[0]}`;
+      const endLngLat = `${end[1]},${end[0]}`;
+
+      try {
+        const response = await fetch(
+          `https://api.openrouteservice.org/v2/directions/driving-car?start=${startLngLat}&end=${endLngLat}`,
+          { headers: { 'Authorization': ORS_API_KEY } }
+        );
+        const data = await response.json();
+
+        if (data.features && data.features.length > 0) {
+          const leafletCoords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+          setRoutePolyline(leafletCoords);
+        } else {
+            setRoutePolyline([start, end]); 
+        }
+      } catch (error) {
+        console.error("Routing Error:", error);
+        setRoutePolyline([start, end]); 
+      } finally {
+          setIsRouting(false);
+      }
+  };
+
+  const handleVehicleSelect = (id) => {
+    onVehicleSelect(id); // Call parent handler
+  };
 
   const handleNotificationClick = (coords, id) => {
     setMapView({ center: coords, zoom: 15 });
-    setActiveVehicleId(id);
+    handleVehicleSelect(id);
+  };
+
+  // --- COLOR TOKEN LOGIC (Strict 4 Colors) ---
+  const getIcon = (v) => {
+      if (v.healthStatus === 'critical') return RedIcon;
+      if (v.healthStatus === 'warning' || v.isDelayed) return YellowIcon;
+      if (v.status === 'maintenance' || v.status === 'inactive') return GreyIcon;
+      return GreenIcon;
+  };
+
+  // Helper component to update map view
+  const MapUpdater = ({ center, zoom }) => {
+    const map = useMap();
+    useEffect(() => {
+      if (center) map.flyTo(center, zoom, { animate: true, duration: 1.5 });
+    }, [center, zoom, map]);
+    return null;
   };
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div className="flex flex-col h-[calc(100vh-100px)] space-y-4">
+      
+      {/* Top Stats Bar */}
+      <div className="grid grid-cols-5 gap-4">
         <MetricCard label="Total Fleets" value={stats.total} icon={Truck} colorClass="text-gray-800" />
         <MetricCard label="On-Time" value={stats.onTime} icon={CheckCircle2} colorClass="text-emerald-500" />
         <MetricCard label="Delayed" value={stats.delayed} icon={Clock} colorClass="text-amber-500" />
@@ -1378,51 +2264,249 @@ const DashboardView = ({ setModalOpen, fleet }) => {
         <MetricCard label="In Transit" value={stats.inTransit} icon={Send} colorClass="text-gray-800" />
       </div>
 
-      <div className="flex gap-6 h-[600px]">
-        {/* Notification List */}
-        <div className="w-1/3 space-y-4 overflow-y-auto pr-2">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold text-gray-700 uppercase text-xs">Notifications</h3>
-          </div>
-          {notifications.map((note) => (
-            <div 
-              key={note.id} 
-              onClick={() => handleNotificationClick(note.coords, note.id)}
-              className={`p-4 rounded-lg border shadow-sm cursor-pointer transition-all ${
-                activeVehicleId === note.id ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300' : 'bg-white border-gray-200 hover:border-blue-300'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2 font-bold text-gray-800">
-                    <div className={`p-1.5 rounded ${note.type === 'critical' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
-                        {note.type === 'critical' ? <AlertTriangle size={14} /> : <Clock size={14} />}
-                    </div>
-                    {note.title}
+      {/* Main Content Area */}
+      <div className="flex flex-1 gap-6 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
+        
+        {/* Left Panel: Dynamic Content */}
+        <div className="w-80 flex flex-col border-r border-gray-100 bg-white transition-all duration-300">
+          
+          {/* --- SIDEBAR STATE 1: NOTIFICATIONS (When Toggle is ON) --- */}
+          {showNotificationVehiclesOnly ? (
+            <>
+              <div className="p-4 border-b border-gray-100 bg-red-50/30">
+                <div className="flex justify-between items-center mb-1">
+                    <h3 className="font-bold text-red-800 uppercase text-xs tracking-wider flex items-center gap-2">
+                        <AlertTriangle size={14}/> Critical Alerts
+                    </h3>
+                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{notificationVehicles.length}</span>
                 </div>
-                <StatusBadge type={note.type} />
+                <p className="text-[10px] text-gray-500">Vehicles requiring immediate attention</p>
               </div>
-              <div className="text-sm font-bold text-gray-700 mt-1 flex items-center gap-2"><Truck size={14}/> {note.vehicle}</div>
-              <div className="text-xs text-gray-400 mt-1 pl-6">{note.loc}</div>
-            </div>
-          ))}
+              
+              <div className="overflow-y-auto flex-1 bg-white">
+                {notificationVehicles.map((v) => (
+                  <div 
+                    key={v.id} 
+                    onClick={() => handleNotificationClick(v.coords, v.id)}
+                    className={`p-4 border-b border-gray-100 cursor-pointer transition-all hover:bg-gray-50 ${
+                      activeVehicleId === v.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-gray-800">{v.id}</span>
+                      </div>
+                      <StatusBadge type={v.healthStatus === 'critical' ? 'critical' : 'warning'} />
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 mb-1">
+                        {v.issues?.[0]?.description || v.delayReason || "Issue reported"}
+                    </div>
+                    <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <MapPin size={10} /> {v.locationName}
+                    </div>
+                  </div>
+                ))}
+                {notificationVehicles.length === 0 && (
+                    <div className="p-8 text-center text-gray-400">
+                        <CheckCircle2 size={32} className="mx-auto mb-2 opacity-20 text-emerald-500"/>
+                        <p className="text-xs">No active alerts</p>
+                    </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* --- SIDEBAR STATE 2: DETAILS & ITINERARY (When Toggle is OFF) --- */
+            <>
+               <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex justify-between items-center mb-1">
+                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-wider">Vehicle Details</h3>
+                </div>
+                <p className="text-[10px] text-gray-500">Select a vehicle on the map to view info</p>
+              </div>
+
+              <div className="overflow-y-auto flex-1 bg-white">
+                {selectedVehicle ? (
+                    <div className="p-4 space-y-6">
+                        {/* Vehicle Header */}
+                        <div>
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-800">{selectedVehicle.id}</h2>
+                                    <p className="text-xs text-gray-500">{selectedVehicle.makeModel}</p>
+                                </div>
+                                <StatusBadge type={selectedVehicle.status} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-3">
+                                <div className="bg-gray-50 p-2 rounded border border-gray-100">
+                                    <div className="text-[10px] text-gray-400 uppercase">Fuel</div>
+                                    <div className="text-sm font-bold text-gray-700">{selectedVehicle.fuelType}</div>
+                                </div>
+                                <div className="bg-gray-50 p-2 rounded border border-gray-100">
+                                    <div className="text-[10px] text-gray-400 uppercase">Capacity</div>
+                                    <div className="text-sm font-bold text-gray-700">{100 - (selectedVehicle.capacityFree || 0)}% Full</div>
+                                </div>
+                            </div>
+                        </div>
+
+                         {/* Accordion Info */}
+                         <div className="border-t border-b border-gray-100 py-2">
+                             <button 
+                                 onClick={() => setIsInfoExpanded(!isInfoExpanded)}
+                                 className="w-full flex justify-between items-center py-2 text-sm font-bold text-gray-800"
+                             >
+                                 <span className="flex items-center gap-2"><Info size={14} className="text-blue-600"/> Vehicle Info</span>
+                                 <ChevronDown size={14} className={`transition-transform ${isInfoExpanded ? 'rotate-180' : ''}`}/>
+                             </button>
+                             {isInfoExpanded && (
+                                 <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs pt-2 pb-2">
+                                     <div>
+                                         <span className="text-gray-400 block">VIN</span>
+                                         <span className="font-medium">{selectedVehicle.vin}</span>
+                                     </div>
+                                     <div>
+                                         <span className="text-gray-400 block">Type</span>
+                                         <span className="font-medium">{selectedVehicle.type}</span>
+                                     </div>
+                                     <div>
+                                         <span className="text-gray-400 block">Last Service</span>
+                                         <span className="font-medium">{selectedVehicle.lastService}</span>
+                                     </div>
+                                     <div>
+                                          <span className="text-gray-400 block">Expiry</span>
+                                          <span className="font-medium">{selectedVehicle.insuranceExpiry}</span>
+                                     </div>
+                                 </div>
+                             )}
+                         </div>
+
+                        {/* Live Itinerary */}
+                        <div>
+                            <h4 className="text-xs font-bold uppercase text-gray-500 mb-3 flex items-center gap-2">
+                                <Route size={12}/> Live Itinerary
+                            </h4>
+                            <div className="relative pl-2">
+                                <div className="absolute left-[5px] top-2 bottom-4 w-0.5 bg-gray-200"></div>
+                                {getDisplayUpdates(selectedVehicle).map((update, idx) => (
+                                    <div key={idx} className="relative flex gap-3 mb-4 last:mb-0">
+                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm mt-1 relative z-10 flex-shrink-0 ${
+                                            update.type === 'reroute' ? 'bg-amber-500' : 'bg-blue-500'
+                                        }`}></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-xs font-bold text-gray-800">{update.title}</span>
+                                                <span className="text-[10px] text-gray-400">{update.time}</span>
+                                            </div>
+                                            <p className="text-[11px] text-gray-600 leading-tight mt-0.5">{update.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {getDisplayUpdates(selectedVehicle).length === 0 && (
+                                    <p className="text-xs text-gray-400 italic">No active route updates.</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400 p-6">
+                        <Truck size={48} className="mb-3 opacity-10"/>
+                        <p className="text-sm font-medium text-center">No vehicle selected</p>
+                        <p className="text-xs text-center mt-1">Click a marker on the map to view details.</p>
+                    </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Live Map */}
-        <div className="w-2/3 bg-white rounded-lg border border-gray-200 relative overflow-hidden shadow-sm">
-          <MapContainer center={PUNE_CENTER} zoom={12} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <MapUpdater center={mapView.center} zoom={mapView.zoom} />
-            {fleet.map(v => (
-              <Marker key={v.id} position={v.coords} icon={v.healthStatus === 'critical' ? RedIcon : v.status === 'active' ? GreenIcon : DefaultIcon}>
-                <Popup>{v.id}</Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+        {/* Right Panel: Map */}
+        <div className="flex-1 flex flex-col relative">
+          
+          {/* Map Header / Toggle */}
+          <div className="h-12 border-b border-gray-100 flex items-center justify-between px-4 bg-white z-10 relative shadow-sm">
+             <div className="text-xs text-gray-500">
+                Showing <span className="font-bold text-gray-800">{displayedVehicles.length}</span> active vehicles
+             </div>
+             <DashboardSwitch 
+                checked={showNotificationVehiclesOnly} 
+                onCheckedChange={setShowNotificationVehiclesOnly}
+                label="Show Notification Vehicles Only"
+             />
+          </div>
+
+          {/* Map Container */}
+          <div className="flex-1 relative z-0">
+            <MapContainer center={[18.5204, 73.8567]} zoom={12} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapUpdater center={mapView.center} zoom={mapView.zoom} />
+              
+              {/* Render Vehicles */}
+              {displayedVehicles.map(v => (
+                <Marker 
+                    key={v.id} 
+                    position={v.coords} 
+                    icon={getIcon(v)}
+                    eventHandlers={{ click: () => handleVehicleSelect(v.id) }}
+                >
+                  <Popup>
+                      <div className="min-w-[180px]">
+                          {/* --- HEADER: STATUS PILL REMOVED --- */}
+                          <div className="flex justify-between items-center mb-2 border-b pb-1">
+                              <span className="font-bold text-gray-800">{v.id}</span>
+                          </div>
+                          <div className="space-y-1.5">
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                  <MapPin size={12} className="text-blue-500"/> 
+                                  <span className="truncate max-w-[140px]">{v.locationName}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                  <FlagIcon size={12} className="text-red-500"/> 
+                                  <span className="truncate max-w-[140px]">{v.destinationName || 'No Destination'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                  <Fuel size={12} className="text-amber-500"/> 
+                                  <span>{v.fuelType} ({(v.capacityFree !== undefined ? 100 - v.capacityFree : 65)}%)</span>
+                              </div>
+                          </div>
+                      </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+              {/* Draw Actual Road Route if Selected */}
+              {activeVehicleId && routePolyline.length > 0 && (
+                  <>
+                    <Polyline 
+                        positions={routePolyline} 
+                        pathOptions={{ color: '#2563eb', weight: 5, opacity: 0.7 }} 
+                    />
+                    
+                    {/* Destination Marker (Blue Pointer) */}
+                    <Marker position={routePolyline[routePolyline.length - 1]} icon={BlueIcon}>
+                        <Popup className="font-bold">Destination</Popup>
+                    </Marker>
+                  </>
+              )}
+
+            </MapContainer>
+            
+            {/* Loading Indicator for Routing */}
+            {isRouting && (
+                <div className="absolute top-4 right-4 bg-white/90 px-3 py-1.5 rounded shadow-lg text-xs font-bold text-blue-600 z-[400] flex items-center gap-2 border border-blue-100">
+                    <Loader2 size={12} className="animate-spin"/> Calculating Road Path...
+                </div>
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );
 };
+// Helper Icon for Popup
+const FlagIcon = ({size, className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+);
 
 // ... [HealthView, VehiclesView, DriversView, AnalyticsView kept consistent with Pune IDs] ...
 
@@ -2082,20 +3166,130 @@ const HealthView = ({ fleet, setFleet }) => {
     </div>
   );
 };
+// --- New Helper Components for Vehicles View ---
 
+const Input = ({ className, ...props }) => (
+  <input className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} {...props} />
+);
+
+const Collapsible = ({ open, children, className }) => (
+  <div className={className}>{children}</div>
+);
+
+const CollapsibleTrigger = ({ asChild, children }) => children;
+
+const CollapsibleContent = ({ open, children, className }) => (
+  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} ${className}`}>
+    {children}
+  </div>
+);
+
+// Simplified Select for single-file compatibility
+const Select = ({ value, onValueChange, children }) => (
+  <div className="relative">
+    {React.Children.map(children, child => 
+      React.cloneElement(child, { value, onValueChange })
+    )}
+  </div>
+);
+
+const SelectTrigger = ({ children, className }) => <div className={`flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ${className}`}>{children}</div>;
+const SelectValue = ({ placeholder }) => <span>{placeholder}</span>;
+const SelectContent = ({ children }) => <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white text-gray-950 shadow-md">{children}</div>;
+const SelectItem = ({ value, children, onClick }) => (
+  <div onClick={() => onClick(value)} className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-gray-100 focus:bg-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
+    {children}
+  </div>
+);
 // Note: Accepting 'vehicles' as a prop now
-const VehiclesView = ({ vehicles }) => {
-  const [filter, setFilter] = useState("all");
+const VehiclesView = () => {
+  // --- Data from Screenshot (Embedded for functionality) ---
+  const initialVehicles = [
+    {
+      id: "BLR-0847", vin: "1HGBH41JXMN109186", numberPlate: "KA 01 AB 1234", vehicleType: "Heavy Truck", make: "Tata", model: "Prima 4928.S", year: 2022, fuelType: "Diesel", capacity: "28 Tonnes", lastService: "2024-01-10", insuranceExpiry: "2024-12-15", status: "active", category: "Long Haul",
+      documents: {
+        registration: { number: "KA01AB1234RC", validTill: "2027-03-15" },
+        insurance: { provider: "ICICI Lombard", policyNumber: "POL-2024-789456", validTill: "2024-12-15" },
+        pollution: { certificateNumber: "PUC-BLR-2024-1234", validTill: "2024-06-30" },
+        fitness: { certificateNumber: "FIT-KA-2024-5678", validTill: "2025-01-15" },
+        permit: { type: "National Permit", validTill: "2025-03-15", regions: ["Karnataka", "Tamil Nadu", "Andhra Pradesh", "Maharashtra"] },
+      },
+      activity: {
+        routeHistory: [
+          { date: "2024-01-15", route: "HSR Layout → Koramangala → BTM Layout", distance: "24 km" },
+          { date: "2024-01-14", route: "Whitefield → Marathahalli → Indiranagar", distance: "32 km" },
+        ],
+        shipmentsCompleted: [
+          { id: "SHP-A1B2C3", date: "2024-01-15", from: "HSR Warehouse", to: "BTM Layout", status: "Delivered" },
+        ],
+        totalKm: 12450, totalShipments: 342,
+      },
+    },
+    {
+      id: "BLR-1203", vin: "2HGBH41JXMN209287", numberPlate: "KA 01 CD 5678", vehicleType: "Medium Truck", make: "Ashok Leyland", model: "BOSS 1920", year: 2023, fuelType: "Diesel", capacity: "19 Tonnes", lastService: "2024-01-05", insuranceExpiry: "2024-11-20", status: "active", category: "Regional",
+      activity: { routeHistory: [{ date: "2024-01-15", route: "Koramangala → Ulsoor", distance: "18 km" }], shipmentsCompleted: [], totalKm: 8920, totalShipments: 215 },
+      documents: {
+        registration: { number: "KA01CD5678RC", validTill: "2028-01-10" },
+        insurance: { provider: "HDFC Ergo", policyNumber: "POL-998877", validTill: "2024-11-20" },
+        pollution: { certificateNumber: "PUC-888", validTill: "2024-08-01" },
+        fitness: { certificateNumber: "FIT-999", validTill: "2025-02-20" },
+        permit: { type: "State Permit", validTill: "2026-01-01", regions: ["Karnataka"] },
+      }
+    },
+    {
+      id: "BLR-0562", vin: "3HGBH41JXMN309388", numberPlate: "KA 01 EF 9012", vehicleType: "Light Truck", make: "Eicher", model: "Pro 2049", year: 2021, fuelType: "CNG", capacity: "7 Tonnes", lastService: "2024-01-12", insuranceExpiry: "2025-02-28", status: "maintenance", category: "Last Mile",
+      activity: { routeHistory: [], shipmentsCompleted: [], totalKm: 15670, totalShipments: 456 },
+    },
+    {
+        id: "BLR-0291", vin: "5HGBH41JXMN509590", numberPlate: "KA 01 IJ 7890", vehicleType: "Medium Truck", make: "Tata", model: "LPT 1613", year: 2020, fuelType: "Diesel", capacity: "16 Tonnes", lastService: "2024-01-08", insuranceExpiry: "2024-08-15", status: "inactive", category: "Regional",
+        activity: { routeHistory: [], shipmentsCompleted: [], totalKm: 22100, totalShipments: 512 },
+    },
+  ];
+
+  const [vehicles, setVehicles] = useState(initialVehicles);
+  const [expandedVehicles, setExpandedVehicles] = useState({});
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [routeCoordinates, setRouteCoordinates] = useState([]);
-  const [isRouting, setIsRouting] = useState(false);
-  const [isInfoExpanded, setIsInfoExpanded] = useState(true); // Control the info section
+  const [sheetType, setSheetType] = useState(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [docsDialogOpen, setDocsDialogOpen] = useState(false);
+  const [selectedVehicleForDocs, setSelectedVehicleForDocs] = useState(null);
+  const [newVehicle, setNewVehicle] = useState({ vin: "", numberPlate: "", vehicleType: "", fuelType: "", category: "", make: "", model: "", capacity: "" });
+  
+  // Custom Toast State since we aren't using the hook
+  const [toast, setToast] = useState(null);
 
-  // Use the API Key provided in your context
-  const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZmY2JjMTU3ZWRhZTRlZmJhZGIzYjM4Zjk1YmZkMWZjIiwiaCI6Im11cm11cjY0In0='; 
-  const PUNE_CENTER = [18.5204, 73.8567];
+  const openDocsDialog = (vehicle) => {
+    setSelectedVehicleForDocs(vehicle);
+    setDocsDialogOpen(true);
+  };
 
-  const filteredVehicles = filter === "all" ? vehicles : vehicles.filter(v => v.status === filter);
+  const isDocExpiringSoon = (validTill) => {
+    if(!validTill) return false;
+    const expiryDate = new Date(validTill);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  };
+
+  const isDocExpired = (validTill) => {
+    if(!validTill) return false;
+    return new Date(validTill) < new Date();
+  };
+
+  const toggleExpand = (vehicleId, section) => {
+    setExpandedVehicles((prev) => ({
+      ...prev,
+      [vehicleId]: {
+        ...prev[vehicleId],
+        [section]: !prev[vehicleId]?.[section],
+      },
+    }));
+  };
+
+  const openSheet = (vehicle, type) => {
+    setSelectedVehicle(vehicle);
+    setSheetType(type);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -2106,294 +3300,281 @@ const VehiclesView = ({ vehicles }) => {
     }
   };
 
-  const getDisplayUpdates = (vehicle) => {
-    if (vehicle.routeUpdates && vehicle.routeUpdates.length > 0) return vehicle.routeUpdates;
-    if (vehicle.destinationName) {
-        return [{
-            time: "09:00 AM",
-            type: "status",
-            title: "Route Assigned",
-            desc: `Trip scheduled from ${vehicle.locationName} to ${vehicle.destinationName}.`
-        }];
+  const handleAddVehicle = () => {
+    if (!newVehicle.vin || !newVehicle.numberPlate || !newVehicle.vehicleType) {
+      alert("Please fill in required fields");
+      return;
     }
-    return [];
-  };
-
-  const MapFlyTo = ({ center }) => {
-    const map = useMap();
-    useEffect(() => {
-      if (center) map.flyTo(center, 13, { duration: 1.5 });
-    }, [center, map]);
-    return null;
-  };
-
-  // --- NEW: Multi-stop Routing Logic ---
-  const fetchMultiStopRoute = async (waypoints) => {
-    if (!waypoints || waypoints.length < 2) {
-        setRouteCoordinates([]);
-        return;
-    }
-    
-    setIsRouting(true);
-
-    // Convert [lat, lng] to [lng, lat] for ORS API
-    const coordinates = waypoints.map(pt => [pt[1], pt[0]]);
-
-    try {
-      const response = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-        method: 'POST',
-        headers: {
-          'Authorization': ORS_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ coordinates: coordinates })
-      });
-
-      const data = await response.json();
-
-      if (data.features && data.features.length > 0) {
-        // Convert back to [lat, lng] for Leaflet
-        const leafletCoords = data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-        setRouteCoordinates(leafletCoords);
-      } else {
-        setRouteCoordinates([]);
-      }
-    } catch (error) {
-      console.error("Error fetching route:", error);
-      setRouteCoordinates([]);
-    } finally {
-        setIsRouting(false);
-    }
-  };
-
-  const handleVehicleClick = (vehicle) => {
-      setSelectedVehicle(vehicle);
-      setIsInfoExpanded(true); // Open info when new vehicle clicked
-      
-      // Check if vehicle has a specific waypoint list (merged route)
-      if(vehicle.status === 'active') {
-          if (vehicle.waypoints && vehicle.waypoints.length > 0) {
-              // Use the new merged route logic
-              fetchMultiStopRoute(vehicle.waypoints);
-          } else if (vehicle.destCoords) {
-              // Fallback to simple A -> B
-              fetchMultiStopRoute([vehicle.coords, vehicle.destCoords]);
-          } else {
-              setRouteCoordinates([]);
-          }
-      } else {
-          setRouteCoordinates([]);
-      }
+    const vehicleId = `BLR-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    const newVehicleData = {
+      id: vehicleId,
+      ...newVehicle,
+      year: new Date().getFullYear(),
+      make: newVehicle.make || "Unknown",
+      model: newVehicle.model || "Unknown",
+      capacity: newVehicle.capacity || "N/A",
+      lastService: new Date().toISOString().split("T")[0],
+      insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      status: "active",
+      activity: { routeHistory: [], shipmentsCompleted: [], totalKm: 0, totalShipments: 0 },
+    };
+    setVehicles([newVehicleData, ...vehicles]);
+    setAddDialogOpen(false);
+    setNewVehicle({ vin: "", numberPlate: "", vehicleType: "", fuelType: "", category: "", make: "", model: "", capacity: "" });
+    setToast({ title: "Vehicle Added", message: `${vehicleId} has been added to the fleet.` });
+    setTimeout(() => setToast(null), 3000);
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-140px)] relative">
-      {/* Left Column: Vehicle List */}
-      <div className="w-full lg:w-1/3 bg-white rounded-lg border border-gray-200 flex flex-col overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-gray-100">
-            <h2 className="text-lg font-bold text-gray-800">Fleet Overview</h2>
-            <div className="flex bg-gray-100 p-1 rounded-lg mt-3">
-                {['all', 'active', 'maintenance', 'inactive'].map((tab) => (
-                    <button
-                    key={tab}
-                    onClick={() => setFilter(tab)}
-                    className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wide rounded-md transition-all ${
-                        filter === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    >
-                    {tab}
-                    </button>
-                ))}
-            </div>
+    <div className="flex flex-col h-full bg-gray-50/50">
+      {/* Internal Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999] bg-white border border-gray-200 shadow-xl rounded-lg p-4 w-96 border-l-4 border-l-blue-600 animate-in slide-in-from-bottom-5">
+            <h4 className="font-bold text-gray-900 text-sm">{toast.title}</h4>
+            <p className="text-sm text-gray-600">{toast.message}</p>
         </div>
+      )}
 
-        <div className="overflow-y-auto flex-1 p-3 space-y-3 bg-gray-50/30">
-          {filteredVehicles.map((vehicle) => (
-            <div 
-              key={vehicle.id} 
-              onClick={() => handleVehicleClick(vehicle)}
-              className={`bg-white border rounded-lg p-3 cursor-pointer transition-all ${
-                selectedVehicle?.id === vehicle.id 
-                ? 'ring-1 ring-blue-500 border-blue-500 shadow-md bg-blue-50/10' 
-                : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
-              }`}
-            >
-                <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-3">
-                        <Truck size={18} className={vehicle.status === 'active' ? 'text-emerald-600' : 'text-gray-400'} />
-                        <div>
-                            <h3 className="font-bold text-gray-800 text-sm">{vehicle.id}</h3>
-                            <p className="text-[10px] text-gray-500 uppercase">{vehicle.makeModel || vehicle.vehicleType}</p>
-                        </div>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusColor(vehicle.status)}`}>
-                        {vehicle.status}
-                    </span>
-                </div>
-                {/* Visual indicator for Multi-Stop Route */}
-                {vehicle.waypoints && vehicle.waypoints.length > 2 && (
-                      <div className="mt-2 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-100 p-1.5 rounded flex items-center gap-1">
-                         <Route size={10}/> Multi-Stop Route Assigned ({vehicle.waypoints.length - 1} stops)
-                      </div>
-                )}
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center">
+              <Truck className="w-5 h-5 text-blue-600" />
             </div>
-          ))}
+            <div>
+              <h1 className="text-lg font-semibold text-gray-800">Vehicles</h1>
+              <p className="text-sm text-gray-500">{vehicles.length} vehicles in fleet</p>
+            </div>
+          </div>
+          <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Add New Vehicle
+          </Button>
         </div>
       </div>
 
-      {/* Right Column: Map & Details */}
-      <div className="w-full lg:w-2/3 flex flex-col gap-4 h-full overflow-hidden">
-          
-          {/* Map Container */}
-          <div className="h-1/2 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm relative z-0">
-             <MapContainer center={PUNE_CENTER} zoom={12} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <MapFlyTo center={selectedVehicle?.coords || PUNE_CENTER} />
+      {/* Vehicle List */}
+      <ScrollArea className="flex-1">
+        <div className="p-6 space-y-3">
+          {vehicles.map((vehicle) => (
+            <Card key={vehicle.id} className="overflow-hidden border border-gray-200 shadow-sm">
+              <div className="p-4">
+                {/* Vehicle Header Row */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                      <Truck className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-mono font-semibold text-gray-800">{vehicle.id}</h3>
+                      <p className="text-xs text-gray-500">{vehicle.numberPlate}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="gap-1 h-8 text-xs" onClick={() => openDocsDialog(vehicle)}>
+                      <FileText className="w-3 h-3" /> Docs
+                    </Button>
+                    <Badge variant="outline" className="text-xs bg-white">{vehicle.category}</Badge>
+                    <Badge className={getStatusColor(vehicle.status)}>
+                      {vehicle.status.charAt(0).toUpperCase() + vehicle.status.slice(1)}
+                    </Badge>
+                  </div>
+                </div>
 
-                {/* Draw Vehicles */}
-                {filteredVehicles.map(v => (
-                    <Marker key={v.id} position={v.coords} icon={v.status === 'active' ? GreenIcon : RedIcon} eventHandlers={{ click: () => handleVehicleClick(v) }}>
-                        <Popup><span className="font-bold">{v.id}</span></Popup>
-                    </Marker>
-                ))}
+                {/* Expandable Options Row */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full justify-between h-9" onClick={() => toggleExpand(vehicle.id, "info")}>
+                      <span className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                        <Info className="w-3 h-3 text-blue-600" /> Vehicle Info
+                      </span>
+                      {expandedVehicles[vehicle.id]?.info ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    </Button>
+                    
+                    <Collapsible open={expandedVehicles[vehicle.id]?.info}>
+                        <CollapsibleContent open={expandedVehicles[vehicle.id]?.info} className="mt-2 space-y-3 bg-gray-50 p-3 rounded-md border border-gray-100">
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div><span className="text-gray-400 block">VIN</span><p className="font-mono text-gray-800">{vehicle.vin}</p></div>
+                                <div><span className="text-gray-400 block">Type</span><p className="text-gray-800">{vehicle.vehicleType}</p></div>
+                                <div><span className="text-gray-400 block">Make/Model</span><p className="text-gray-800">{vehicle.make} {vehicle.model}</p></div>
+                                <div><span className="text-gray-400 block">Fuel</span><p className="text-gray-800">{vehicle.fuelType}</p></div>
+                                <div><span className="text-gray-400 block">Service</span><p className="text-gray-800">{vehicle.lastService}</p></div>
+                                <div><span className="text-gray-400 block">Insurance</span><p className="text-gray-800">{vehicle.insuranceExpiry}</p></div>
+                            </div>
+                            <Button variant="secondary" size="sm" className="w-full h-7 text-xs bg-white border border-gray-200" onClick={() => openSheet(vehicle, "info")}>View Full Details</Button>
+                        </CollapsibleContent>
+                    </Collapsible>
+                  </div>
 
-                {/* Draw Route & Intermediate Markers */}
-                {selectedVehicle && routeCoordinates.length > 0 && (
-                    <>
-                        <Polyline 
-                            positions={routeCoordinates} 
-                            pathOptions={{ color: 'blue', weight: 4, opacity: 0.6, dashArray: '10, 10' }} 
-                        />
-                        
-                        {/* Logic to draw intermediate stops if waypoints exist */}
-                        {selectedVehicle.waypoints && selectedVehicle.waypoints.length > 1 ? (
-                            selectedVehicle.waypoints.map((pt, idx) => {
-                                if (idx === 0) return null; 
-                                return (
-                                    <Marker key={idx} position={pt} icon={DefaultIcon}>
-                                        <Popup>Stop #{idx}: {idx === selectedVehicle.waypoints.length - 1 ? "Final Destination" : "Intermediate Stop"}</Popup>
-                                    </Marker>
-                                )
-                            })
-                        ) : (
-                            selectedVehicle.destCoords && (
-                                <Marker position={selectedVehicle.destCoords} icon={DefaultIcon}>
-                                    <Popup>Destination: {selectedVehicle.destinationName}</Popup>
-                                </Marker>
-                            )
-                        )}
-                    </>
-                )}
-             </MapContainer>
-             
-             {isRouting && (
-                 <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 rounded shadow text-xs font-bold text-blue-600 z-[400] flex items-center gap-2">
-                     <Loader2 size={12} className="animate-spin"/> Calculating Merged Route...
-                 </div>
-             )}
-          </div>
+                  <div className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full justify-between h-9" onClick={() => toggleExpand(vehicle.id, "activity")}>
+                      <span className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                        <Activity className="w-3 h-3 text-amber-600" /> Vehicle Activity
+                      </span>
+                      {expandedVehicles[vehicle.id]?.activity ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    </Button>
 
-          {/* Details Section */}
-          <div className="flex-1 overflow-y-auto pr-1 pb-2">
-              {selectedVehicle ? (
-                  <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                    {/* Header */}
-                    <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-white p-2 rounded-lg border border-gray-200">
-                                <Truck className="text-gray-700" size={20}/>
+                    <Collapsible open={expandedVehicles[vehicle.id]?.activity}>
+                        <CollapsibleContent open={expandedVehicles[vehicle.id]?.activity} className="mt-2 space-y-3 bg-gray-50 p-3 rounded-md border border-gray-100">
+                            <div className="grid grid-cols-2 gap-3 text-xs mb-2">
+                                <div className="flex items-center gap-2"><Gauge className="w-3 h-3 text-gray-400" /><div><span className="text-gray-400 block">Total KM</span><p className="font-mono text-gray-800">{vehicle.activity.totalKm.toLocaleString()}</p></div></div>
+                                <div className="flex items-center gap-2"><Package className="w-3 h-3 text-gray-400" /><div><span className="text-gray-400 block">Shipments</span><p className="font-mono text-gray-800">{vehicle.activity.totalShipments}</p></div></div>
                             </div>
                             <div>
-                                <h3 className="font-bold text-gray-800 text-lg leading-none">{selectedVehicle.id}</h3>
-                                <span className="text-xs text-gray-500">{selectedVehicle.makeModel}</span>
+                                <span className="text-[10px] text-gray-400 uppercase font-bold">Recent Routes</span>
+                                <div className="mt-1 space-y-1">
+                                    {vehicle.activity.routeHistory.length > 0 ? vehicle.activity.routeHistory.slice(0, 2).map((route, idx) => (
+                                    <div key={idx} className="text-[10px] flex items-center gap-2 bg-white p-1.5 rounded border border-gray-100">
+                                        <Route className="w-3 h-3 text-gray-400" />
+                                        <span className="text-gray-700 truncate flex-1">{route.route}</span>
+                                        <span className="text-gray-400 font-mono">{route.distance}</span>
+                                    </div>
+                                    )) : <span className="text-[10px] text-gray-400 italic">No recent activity</span>}
+                                </div>
+                            </div>
+                            <Button variant="secondary" size="sm" className="w-full h-7 text-xs bg-white border border-gray-200" onClick={() => openSheet(vehicle, "activity")}>View Full Activity</Button>
+                        </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </ScrollArea>
+
+      {/* Side Sheet */}
+      <Sheet open={!!sheetType} onOpenChange={() => setSheetType(null)}>
+        {selectedVehicle && sheetType === "info" && (
+            <>
+                <SheetHeader>
+                    <SheetTitle className="flex items-center gap-2"><Truck className="w-5 h-5 text-blue-600"/> {selectedVehicle.id} Info</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-6">
+                    <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
+                        <Truck className="w-16 h-16 text-gray-300" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div><span className="text-gray-500 text-xs">VIN</span><p className="font-mono text-gray-900">{selectedVehicle.vin}</p></div>
+                        <div><span className="text-gray-500 text-xs">Plate</span><p className="font-mono text-gray-900">{selectedVehicle.numberPlate}</p></div>
+                        <div><span className="text-gray-500 text-xs">Make</span><p className="text-gray-900">{selectedVehicle.make}</p></div>
+                        <div><span className="text-gray-500 text-xs">Model</span><p className="text-gray-900">{selectedVehicle.model}</p></div>
+                        <div><span className="text-gray-500 text-xs">Capacity</span><p className="text-gray-900">{selectedVehicle.capacity}</p></div>
+                        <div><span className="text-gray-500 text-xs">Fuel</span><p className="text-gray-900">{selectedVehicle.fuelType}</p></div>
+                    </div>
+                </div>
+            </>
+        )}
+        {selectedVehicle && sheetType === "activity" && (
+            <>
+                <SheetHeader>
+                    <SheetTitle className="flex items-center gap-2"><Activity className="w-5 h-5 text-amber-600"/> Activity Log</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-6">
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-center"><p className="text-2xl font-mono font-bold text-gray-800">{selectedVehicle.activity.totalKm.toLocaleString()}</p><p className="text-xs text-gray-500">Total Kilometers</p></div>
+                        <div className="text-center"><p className="text-2xl font-mono font-bold text-gray-800">{selectedVehicle.activity.totalShipments}</p><p className="text-xs text-gray-500">Total Shipments</p></div>
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-gray-800 mb-3">Recent Routes</h4>
+                        <div className="space-y-2">
+                            {selectedVehicle.activity.routeHistory.map((route, idx) => (
+                                <div key={idx} className="p-3 bg-white border border-gray-200 rounded-lg text-sm">
+                                    <div className="flex justify-between text-xs text-gray-500 mb-1"><span>{route.date}</span><span className="font-mono">{route.distance}</span></div>
+                                    <p className="text-gray-800">{route.route}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </>
+        )}
+      </Sheet>
+
+      {/* Docs Dialog */}
+      <Dialog open={docsDialogOpen} onOpenChange={setDocsDialogOpen}>
+        <DialogContent className="max-w-xl">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-600"/> Vehicle Documents</DialogTitle></DialogHeader>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                {selectedVehicleForDocs?.documents ? (
+                    <>
+                        {/* RC */}
+                        <div className="p-4 border rounded-lg bg-white shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3">
+                                    <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center"><FileCheck className="w-5 h-5 text-blue-600"/></div>
+                                    <div><h4 className="font-medium text-gray-900">Registration Certificate</h4><p className="text-xs font-mono text-gray-500">{selectedVehicleForDocs.documents.registration.number}</p></div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xs text-gray-400">Valid Till</span>
+                                    <p className={`text-sm font-bold ${isDocExpiringSoon(selectedVehicleForDocs.documents.registration.validTill) ? 'text-amber-600' : 'text-emerald-600'}`}>{selectedVehicleForDocs.documents.registration.validTill}</p>
+                                </div>
                             </div>
                         </div>
-                        <StatusBadge type={selectedVehicle.status}/>
-                    </div>
-                    
-                    {/* --- NEW SECTION: Vehicle Info Accordion --- */}
-                    <div className="border-b border-gray-100">
-                        <button 
-                            onClick={() => setIsInfoExpanded(!isInfoExpanded)}
-                            className="w-full flex justify-between items-center p-3 bg-white hover:bg-gray-50 transition-colors"
-                        >
-                            <span className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                <Info size={16} className="text-blue-600"/> Vehicle Info
-                            </span>
-                            <ChevronDown size={16} className={`text-gray-400 transition-transform ${isInfoExpanded ? 'rotate-180' : ''}`}/>
-                        </button>
-                        
-                        {isInfoExpanded && (
-                            <div className="p-4 grid grid-cols-2 gap-y-4 gap-x-8 bg-white text-sm">
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">VIN</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.vin || 'N/A'}</p>
+                        {/* Insurance */}
+                        <div className="p-4 border rounded-lg bg-white shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3">
+                                    <div className="w-10 h-10 rounded bg-purple-50 flex items-center justify-center"><Shield className="w-5 h-5 text-purple-600"/></div>
+                                    <div><h4 className="font-medium text-gray-900">Insurance</h4><p className="text-xs text-gray-500">{selectedVehicleForDocs.documents.insurance.provider}</p></div>
                                 </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">Type</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.type}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">Make & Model</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.makeModel || 'Unknown'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">Year</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.year || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">Fuel Type</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.fuelType || 'Diesel'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">Capacity</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.capacity || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">Last Service</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.lastService || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs mb-0.5">Insurance Expiry</p>
-                                    <p className="font-medium text-gray-800">{selectedVehicle.insuranceExpiry || 'N/A'}</p>
+                                <div className="text-right">
+                                    <span className="text-xs text-gray-400">Valid Till</span>
+                                    <p className={`text-sm font-bold ${isDocExpiringSoon(selectedVehicleForDocs.documents.insurance.validTill) ? 'text-amber-600' : 'text-emerald-600'}`}>{selectedVehicleForDocs.documents.insurance.validTill}</p>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                    {/* --- END NEW SECTION --- */}
-
-                    {/* Route Timeline */}
-                    <div className="p-4">
-                        <h4 className="text-xs font-bold uppercase text-gray-500 mb-3">Live Itinerary</h4>
-                        <div className="space-y-4 relative pl-2">
-                             <div className="absolute left-[19px] top-2 bottom-4 w-0.5 bg-gray-200"></div>
-                             {getDisplayUpdates(selectedVehicle).map((update, idx) => (
-                                <div key={idx} className="relative flex gap-4">
-                                    <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm mt-1.5 relative z-10 flex-shrink-0 ${
-                                        update.type === 'reroute' ? 'bg-amber-500' : 'bg-blue-500'
-                                    }`}></div>
-                                    <div className="flex-1 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        <div className="flex justify-between">
-                                            <span className="text-xs font-bold text-gray-800">{update.title}</span>
-                                            <span className="text-[10px] text-gray-400">{update.time}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-600 mt-1">{update.desc}</p>
+                        </div>
+                        {/* Permit */}
+                        <div className="p-4 border rounded-lg bg-white shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3">
+                                    <div className="w-10 h-10 rounded bg-orange-50 flex items-center justify-center"><MapPin className="w-5 h-5 text-orange-600"/></div>
+                                    <div>
+                                        <h4 className="font-medium text-gray-900">{selectedVehicleForDocs.documents.permit.type}</h4>
+                                        <div className="flex flex-wrap gap-1 mt-1">{selectedVehicleForDocs.documents.permit.regions.map(r => <span key={r} className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">{r}</span>)}</div>
                                     </div>
                                 </div>
-                             ))}
+                                <div className="text-right">
+                                    <span className="text-xs text-gray-400">Valid Till</span>
+                                    <p className="text-sm font-bold text-emerald-600">{selectedVehicleForDocs.documents.permit.validTill}</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                 </div>
-              ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 m-1">
-                      <p className="font-medium text-sm">Select a vehicle to view detailed info & itinerary</p>
-                  </div>
-              )}
-          </div>
-      </div>
+                    </>
+                ) : (
+                    <div className="text-center py-8 text-gray-400"><AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-20"/><p>No documents found.</p></div>
+                )}
+            </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Add New Vehicle</DialogTitle></DialogHeader>
+            <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div><Label>VIN *</Label><Input value={newVehicle.vin} onChange={e => setNewVehicle({...newVehicle, vin: e.target.value})} placeholder="VIN Number"/></div>
+                    <div><Label>Plate *</Label><Input value={newVehicle.numberPlate} onChange={e => setNewVehicle({...newVehicle, numberPlate: e.target.value})} placeholder="KA 01 AB 1234"/></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Type *</Label><select className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm" value={newVehicle.vehicleType} onChange={e => setNewVehicle({...newVehicle, vehicleType: e.target.value})}><option value="">Select</option><option value="Heavy Truck">Heavy Truck</option><option value="Light Truck">Light Truck</option></select></div>
+                    <div><Label>Fuel</Label><select className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm" value={newVehicle.fuelType} onChange={e => setNewVehicle({...newVehicle, fuelType: e.target.value})}><option value="">Select</option><option value="Diesel">Diesel</option><option value="Electric">Electric</option></select></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Make</Label><Input value={newVehicle.make} onChange={e => setNewVehicle({...newVehicle, make: e.target.value})} placeholder="Tata"/></div>
+                    <div><Label>Capacity</Label><Input value={newVehicle.capacity} onChange={e => setNewVehicle({...newVehicle, capacity: e.target.value})} placeholder="10 Tonnes"/></div>
+                </div>
+            </div>
+            <DialogFooter className="p-4 border-t border-gray-100">
+                <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAddVehicle}>Add Vehicle</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
+}
 
 const DriversView = () => {
   // --- Rich Mock Data ---
@@ -3265,7 +4446,8 @@ export default function SwarmSyncApp() {
   const [isModalOpen, setModalOpen] = useState(false);
   
   // --- STATE MANAGEMENT ---
-  const [vehicles, setVehicles] = useState(UNIFIED_FLEET_DATA); // Using your initial data
+  const [vehicles, setVehicles] = useState(UNIFIED_FLEET_DATA); 
+  const [globalSelectedVehicleId, setGlobalSelectedVehicleId] = useState(null);
   
   // Form State
   const [deliveryForm, setDeliveryForm] = useState({
@@ -3343,8 +4525,8 @@ export default function SwarmSyncApp() {
       if (!bestMatch) {
          const searchTerm = deliveryForm.pickup.toLowerCase();
          bestMatch = vehicles.find(v => 
-            v.status === 'active' && 
-            v.locationName.toLowerCase().includes(searchTerm)
+           v.status === 'active' && 
+           v.locationName.toLowerCase().includes(searchTerm)
          );
       }
 
@@ -3397,101 +4579,37 @@ export default function SwarmSyncApp() {
         const pickupCoords = await fetchCoordinates(deliveryForm.pickup);
         const dropoffCoords = await fetchCoordinates(deliveryForm.dropoff);
 
-        // Fallback coords if API fails (slight offset from truck)
+        // Fallback coords
         const validPickup = pickupCoords || [optimizationResult.vehicle.coords[0] + 0.01, optimizationResult.vehicle.coords[1] + 0.01];
         const validDropoff = dropoffCoords || [validPickup[0] + 0.02, validPickup[1] + 0.01];
-
-        // Route Helpers
-        const calcDist = (p1, p2) => Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));
-        const isClose = (p1, p2) => p1 && p2 && calcDist(p1, p2) < 0.005;
-
-        // **Greedy Logic**: Decide order of stops based on what is closest
-        const getGreedyRoute = (start, oldDest, newPick, newDrop) => {
-            const distToOld = calcDist(start, oldDest);
-            const distToPick = calcDist(start, newPick);
-
-            if (distToPick < distToOld) {
-                // New Pickup is closer -> Go there first
-                const fromPickToOld = calcDist(newPick, oldDest);
-                const fromPickToDrop = calcDist(newPick, newDrop);
-                // Then decide whether to go to Dropoff or Old Destination
-                return fromPickToOld < fromPickToDrop
-                    ? [newPick, oldDest, newDrop] 
-                    : [newPick, newDrop, oldDest]; 
-            } else {
-                // Old Dest is closer -> Finish old job first
-                return [oldDest, newPick, newDrop];
-            }
-        };
 
         // Update Fleet State
         setVehicles(prevVehicles => prevVehicles.map(v => {
             if (v.id === targetId) {
-                let newWaypoints = [v.coords];
-                let pathNames = [v.locationName];
-                let orderedStops = [];
+                // Mock update logic
+                let newWaypoints = [v.coords, validPickup, validDropoff];
+                if(v.destCoords) newWaypoints = [v.coords, validPickup, v.destCoords, validDropoff]; // Basic append for demo
 
-                // Calculate Stops
-                if (v.destCoords) {
-                    const optimizedPoints = getGreedyRoute(v.coords, v.destCoords, validPickup, validDropoff);
-                    optimizedPoints.forEach(pt => {
-                        if (pt === v.destCoords) orderedStops.push({ coord: pt, name: v.destinationName });
-                        else if (pt === validPickup) orderedStops.push({ coord: pt, name: deliveryForm.pickup });
-                        else if (pt === validDropoff) orderedStops.push({ coord: pt, name: deliveryForm.dropoff });
-                    });
-                } else {
-                    // Truck was idle, simple A -> B
-                    orderedStops.push({ coord: validPickup, name: deliveryForm.pickup });
-                    orderedStops.push({ coord: validDropoff, name: deliveryForm.dropoff });
-                }
-
-                // Construct Route Path avoiding duplicates
-                orderedStops.forEach(stop => {
-                    const lastPt = newWaypoints[newWaypoints.length - 1];
-                    if (!isClose(lastPt, stop.coord)) {
-                        newWaypoints.push(stop.coord);
-                        pathNames.push(stop.name);
-                    }
-                });
-
-                const pathDescription = pathNames.join(" → ");
-                const finalDest = orderedStops[orderedStops.length - 1];
-
-                // Create Logs
-                let currentLogs = [...(v.routeUpdates || [])];
                 const newLogEntry = {
                     time: timestamp,
                     type: "reroute",
-                    title: "Route Optimized & Merged",
-                    desc: `New delivery (ID: ${deliveryForm.id}) added. Path: ${pathDescription}.`
+                    title: "Route Optimized",
+                    desc: `New delivery (ID: ${deliveryForm.id}) added.`
                 };
 
                 return {
                     ...v,
-                    waypoints: newWaypoints,
-                    destCoords: finalDest.coord,
-                    destinationName: finalDest.name,
-                    routeUpdates: [newLogEntry, ...currentLogs],
-                    activity: {
-                        ...v.activity,
-                        shipmentsCompleted: [
-                            {
-                                id: deliveryForm.id,
-                                date: "Today",
-                                from: deliveryForm.pickup,
-                                to: deliveryForm.dropoff,
-                                status: "Scheduled"
-                            },
-                            ...(v.activity?.shipmentsCompleted || [])
-                        ]
-                    }
+                    waypoints: newWaypoints, // Assign new path
+                    destCoords: validDropoff,
+                    destinationName: deliveryForm.dropoff,
+                    routeUpdates: [newLogEntry, ...(v.routeUpdates || [])],
                 };
             }
             return v;
         }));
 
         setModalOpen(false);
-        setActiveTab('vehicles'); // Switch view so they can see the change
+        setGlobalSelectedVehicleId(targetId);
         resetForm();
 
     } catch (error) {
@@ -3556,10 +4674,9 @@ export default function SwarmSyncApp() {
   };
 
   const renderContent = () => {
-    // Pass 'vehicles' state down to views that need it
     switch (activeTab) {
-      case 'command': return <DashboardView fleet={vehicles} setModalOpen={setModalOpen} />;
-      case 'health': return <HealthView fleet={vehicles} setFleet={setVehicles} />; // Pass setter if health needs to update status
+      case 'command': return <DashboardView fleet={vehicles} setModalOpen={setModalOpen} activeVehicleId={globalSelectedVehicleId} onVehicleSelect={setGlobalSelectedVehicleId} />;
+      case 'health': return <HealthView fleet={vehicles} setFleet={setVehicles} />; 
       case 'reallocation': return <ReallocationView fleet={vehicles} setFleet={setVehicles} />;
       case 'assistance': return <AssistanceView fleet={vehicles} setFleet={setVehicles} />;
       case 'blockage': return <RoadBlockageView />;
@@ -3567,7 +4684,7 @@ export default function SwarmSyncApp() {
       case 'vehicles': return <VehiclesView vehicles={vehicles} />;
       case 'drivers': return <DriversView />;
       case 'analytics': return <AnalyticsView fleet={vehicles} />;
-      default: return <DashboardView fleet={vehicles} setModalOpen={setModalOpen} />;
+      default: return <DashboardView fleet={vehicles} setModalOpen={setModalOpen} activeVehicleId={globalSelectedVehicleId} onVehicleSelect={setGlobalSelectedVehicleId} />;
     }
   };
 
@@ -3575,72 +4692,47 @@ export default function SwarmSyncApp() {
     <div className="flex h-screen bg-gray-50 font-sans text-gray-800">
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-5 border-b border-gray-100 flex items-center gap-2">
-          <div className="bg-blue-600 text-white p-1 rounded"><Activity size={20} /></div>
-          <div>
-            <h1 className="font-bold text-gray-800 leading-tight">SwarmSync</h1>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Operator Console</p>
-          </div>
-        </div>
+          <div className="p-5 border-b border-gray-100 flex items-center gap-2">
+            <div className="bg-blue-600 text-white p-1 rounded"><Activity size={20} /></div>
+             <div>
+               <h1 className="font-bold text-gray-800 leading-tight">SwarmSync</h1>
+               <p className="text-[10px] text-gray-400 uppercase tracking-wider">Operator Console</p>
+             </div>
+           </div>
+           <nav className="flex-1 overflow-y-auto py-4">
+             {MENU_STRUCTURE.map((item, index) => {
+                 if (item.type === 'header') return <div key={index} className="px-4 text-xs font-semibold text-gray-400 uppercase mb-2 mt-4">{item.label}</div>;
+                 const Icon = item.icon || React.Fragment;
+                 const isExpanded = expandedMenus[item.id];
+                 const isActive = activeTab === item.id;
+                 const hasActiveChild = item.subItems?.some(sub => sub.id === activeTab);
 
-        <nav className="flex-1 overflow-y-auto py-4">
-          {MENU_STRUCTURE.map((item, index) => {
-            if (item.type === 'header') {
-              return <div key={index} className="px-4 text-xs font-semibold text-gray-400 uppercase mb-2 mt-4">{item.label}</div>;
-            }
-            const Icon = item.icon || React.Fragment;
-            const isExpanded = expandedMenus[item.id];
-            const isActive = activeTab === item.id;
-            const hasActiveChild = item.subItems?.some(sub => sub.id === activeTab);
-
-            if (item.hasSubmenu) {
-              return (
-                <div key={item.id} className="mb-1">
-                  <button 
-                    onClick={() => toggleExpand(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors ${isActive || hasActiveChild ? 'text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    <div className="flex items-center gap-3"><Icon size={18} />{item.label}</div>
-                    <ChevronRight size={14} className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-                  </button>
-                  <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-48' : 'max-h-0'}`}>
-                    <div className="bg-gray-50/50 pb-1">
-                      {item.subItems.map(sub => {
-                          const SubIcon = sub.icon;
-                          return (
-                            <button
-                                key={sub.id}
-                                onClick={() => setActiveTab(sub.id)}
-                                className={`w-full flex items-center gap-3 text-left pl-11 pr-4 py-2 text-sm transition-colors ${
-                                activeTab === sub.id 
-                                    ? 'text-blue-600 font-medium bg-blue-50/50 border-r-4 border-blue-600' 
-                                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-                                }`}
-                            >
-                                {SubIcon && <SubIcon size={16} className={activeTab === sub.id ? 'text-blue-500' : 'text-gray-400'} />}
-                                {sub.label}
-                            </button>
-                          );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <button 
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors mb-1 ${
-                  isActive ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Icon size={18} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+                 if (item.hasSubmenu) {
+                     return (
+                         <div key={item.id} className="mb-1">
+                             <button onClick={() => toggleExpand(item.id)} className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors ${isActive || hasActiveChild ? 'text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                                 <div className="flex items-center gap-3"><Icon size={18} />{item.label}</div>
+                                 <ChevronRight size={14} className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                             </button>
+                             <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-48' : 'max-h-0'}`}>
+                                 <div className="bg-gray-50/50 pb-1">
+                                     {item.subItems.map(sub => (
+                                         <button key={sub.id} onClick={() => setActiveTab(sub.id)} className={`w-full flex items-center gap-3 text-left pl-11 pr-4 py-2 text-sm transition-colors ${activeTab === sub.id ? 'text-blue-600 font-medium bg-blue-50/50 border-r-4 border-blue-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'}`}>
+                                             {sub.label}
+                                         </button>
+                                     ))}
+                                 </div>
+                             </div>
+                         </div>
+                     );
+                 }
+                 return (
+                     <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors mb-1 ${isActive ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                         <Icon size={18} /> {item.label}
+                     </button>
+                 );
+             })}
+           </nav>
       </div>
 
       {/* Main Content */}
@@ -3648,16 +4740,14 @@ export default function SwarmSyncApp() {
         <header className="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
           <div>{getBreadcrumb()}</div>
           <div className="flex items-center gap-4">
-             <button onClick={() => { setModalOpen(true); resetForm(); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
-               <Plus size={16} /> Add New Delivery
-             </button>
-             <div className="h-6 w-px bg-gray-300 mx-2"></div>
-             <div className="flex items-center gap-2">
-                <div className="text-right hidden sm:block">
-                    <div className="text-sm font-medium text-gray-800">Admin User</div>
-                    <div className="text-xs text-gray-500">Operator</div>
-                </div>
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-xs border border-blue-200">AU</div>
+             {/* --- UPDATED: CONDITIONAL RENDERING FOR ADD DELIVERY BUTTON --- */}
+             {activeTab === 'command' && (
+                 <button onClick={() => { setModalOpen(true); resetForm(); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+                   <Plus size={16} /> Add New Delivery
+                 </button>
+             )}
+             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center border border-gray-300">
+                <User size={16} className="text-gray-600"/>
              </div>
           </div>
         </header>
@@ -3667,10 +4757,10 @@ export default function SwarmSyncApp() {
         </main>
       </div>
 
-      {/* Add Delivery Modal with Optimization Logic */}
+      {/* Add Delivery Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
                  <Truck className="text-blue-600" size={20}/> Add New Delivery
@@ -3680,48 +4770,16 @@ export default function SwarmSyncApp() {
             
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Shipment ID</label>
-                  <input type="text" value={deliveryForm.id} readOnly className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 text-sm text-gray-500 font-mono" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Delivery Type</label>
-                  <select className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onChange={(e) => setDeliveryForm({...deliveryForm, type: e.target.value})}>
-                    <option value="Normal">Normal Cargo</option>
-                    <option value="Refrigerated">Refrigerated (Cold Chain)</option>
-                    <option value="Hazardous">Hazardous Material</option>
-                  </select>
-                </div>
+                <div><label className="block text-xs font-bold text-gray-700 mb-1">Shipment ID</label><input type="text" value={deliveryForm.id} readOnly className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 text-sm text-gray-500 font-mono" /></div>
+                <div><label className="block text-xs font-bold text-gray-700 mb-1">Delivery Type</label><select className="w-full border border-gray-300 rounded px-3 py-2 text-sm" onChange={(e) => setDeliveryForm({...deliveryForm, type: e.target.value})}><option value="Normal">Normal Cargo</option><option value="Refrigerated">Refrigerated</option></select></div>
               </div>
-
-              <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Pickup Location</label>
-                  <div className="relative">
-                    <MapPin size={14} className="absolute left-3 top-3 text-green-600"/>
-                    <input type="text" placeholder="e.g., Nigdi" className="w-full pl-9 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onChange={(e) => setDeliveryForm({...deliveryForm, pickup: e.target.value})} />
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1">Try: Nigdi, Kothrud, Hinjewadi, Viman Nagar</p>
-              </div>
-              
-              <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Dropoff Location</label>
-                  <div className="relative">
-                    <MapPin size={14} className="absolute left-3 top-3 text-red-500"/>
-                    <input type="text" placeholder="e.g., Koramangala 5th Block" className="w-full pl-9 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onChange={(e) => setDeliveryForm({...deliveryForm, dropoff: e.target.value})} />
-                  </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Load Size (% of Truck)</label>
-                <div className="flex items-center gap-4">
-                  <input type="range" min="1" max="100" defaultValue="0" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" onChange={(e) => setDeliveryForm({...deliveryForm, size: e.target.value})} />
-                  <span className="text-sm font-bold w-12 text-right">{deliveryForm.size}%</span>
-                </div>
-              </div>
+              <div><label className="block text-xs font-bold text-gray-700 mb-1">Pickup</label><input type="text" placeholder="e.g., Nigdi" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" onChange={(e) => setDeliveryForm({...deliveryForm, pickup: e.target.value})} /></div>
+              <div><label className="block text-xs font-bold text-gray-700 mb-1">Dropoff</label><input type="text" placeholder="e.g., Koramangala" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" onChange={(e) => setDeliveryForm({...deliveryForm, dropoff: e.target.value})} /></div>
+              <div><label className="block text-xs font-bold text-gray-700 mb-1">Load Size</label><input type="range" min="1" max="100" defaultValue="0" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" onChange={(e) => setDeliveryForm({...deliveryForm, size: e.target.value})} /></div>
 
               <div className="pt-2">
                  {!optimizationResult && !isChecking && (
-                    <button onClick={handleCheckOptimization} disabled={!deliveryForm.pickup || deliveryForm.size < 1} className="w-full py-2 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onClick={handleCheckOptimization} disabled={!deliveryForm.pickup || deliveryForm.size < 1} className="w-full py-2 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors disabled:opacity-50">
                       Check Route Optimization & Availability
                     </button>
                  )}
@@ -3733,17 +4791,37 @@ export default function SwarmSyncApp() {
                  )}
 
                  {optimizationResult && (
-                    <div className={`p-3 rounded-lg border ${optimizationResult.found ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <div className={`p-4 rounded-lg border ${optimizationResult.found ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                         <div className="flex items-start gap-3">
-                            {optimizationResult.found ? <CheckCircle2 className="text-emerald-600 mt-0.5" size={18}/> : <Info className="text-amber-600 mt-0.5" size={18}/>}
-                            <div>
+                            {optimizationResult.found ? <CheckCircle2 className="text-emerald-600 mt-0.5" size={20}/> : <Info className="text-amber-600 mt-0.5" size={20}/>}
+                            <div className="flex-1">
                                 <h4 className={`text-sm font-bold ${optimizationResult.found ? 'text-emerald-800' : 'text-amber-800'}`}>
-                                    {optimizationResult.found ? 'Existing Route Found!' : 'New Truck Required'}
+                                    {optimizationResult.found ? 'Optimal Vehicle Found' : 'No Capacity Available'}
                                 </h4>
-                                <p className="text-xs text-gray-600 mt-1">{optimizationResult.reason}</p>
-                                {optimizationResult.found && (
-                                    <div className="mt-2 text-xs font-mono bg-white/50 p-1.5 rounded text-emerald-700">
-                                        Assign to: <strong>{optimizationResult.vehicle.id}</strong> ({optimizationResult.savings} saved)
+                                
+                                {optimizationResult.found && optimizationResult.vehicle && (
+                                    <div className="mt-3 bg-white p-3 rounded border border-emerald-100 shadow-sm space-y-2">
+                                        <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                                            <span className="font-bold text-gray-800">{optimizationResult.vehicle.id}</span>
+                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold">MATCH 98%</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                            <div className="flex items-center gap-1">
+                                                <Users size={12}/> {optimizationResult.vehicle.driver}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Truck size={12}/> {optimizationResult.vehicle.makeModel}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Fuel size={12}/> {optimizationResult.vehicle.fuelType}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Package size={12}/> Free: {optimizationResult.vehicle.capacityFree}%
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-emerald-600 font-medium">
+                                            Efficiency: {optimizationResult.savings}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -3771,7 +4849,7 @@ export default function SwarmSyncApp() {
                             optimizationResult?.found ? 'Confirm & Merge Route' : 'Create New Delivery'
                         )}
                       </button>
-            </div>
+            </div> 
           </div>
         </div>
       )}
