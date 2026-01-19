@@ -79,7 +79,39 @@ import {
 // Fix for default Leaflet icon issues in React
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+// --- Custom Truck Icons (SVG) ---
+const createTruckIcon = (color) => {
+  // Unique ID for the mask to prevent conflicts
+  const maskId = `truck-mask-${Math.random().toString(36).substr(2, 9)}`;
 
+  return new L.DivIcon({
+    className: 'custom-truck-icon',
+    html: `
+      <div style="filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.3)); transform: translateY(-10%);">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <mask id="${maskId}">
+              <rect width="100%" height="100%" fill="white"/>
+              <circle cx="6" cy="19" r="3.2" fill="black"/>
+              <circle cx="18" cy="19" r="3.2" fill="black"/>
+            </mask>
+          </defs>
+          <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z" 
+                fill="${color}" 
+                mask="url(#${maskId})"
+                stroke="transparent" 
+                stroke-width="1"/>
+          <circle cx="6" cy="19" r="2.2" fill="${color}" />
+          <circle cx="18" cy="19" r="2.2" fill="${color}" />
+          <path d="M17 10h2l1.5 2h-3.5V10z" fill="white" fill-opacity="0.6"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [32, 32], // Reduced from 48 to 32
+    iconAnchor: [16, 32], // Center bottom
+    popupAnchor: [0, -32]
+  });
+};
 // --- Leaflet Icon Setup ---
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -88,34 +120,13 @@ let DefaultIcon = L.icon({
     iconAnchor: [10, 32]
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-
+const RedIcon = createTruckIcon('#ef4444');   // Red Truck
+  const GreenIcon = createTruckIcon('#10b981');
+  const YellowIcon= createTruckIcon('#e7e711ff');
+  const GreyIcon = createTruckIcon('#484e4cff');
 // Custom Colored Icons
-const RedIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
 
-const GreenIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
 
-const GreyIcon = new L.Icon({ // For Maintenance / Inactive
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
 
 const BlueIcon = new L.Icon({ // For Destination Pointers
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
@@ -126,14 +137,6 @@ const BlueIcon = new L.Icon({ // For Destination Pointers
     shadowSize: [41, 41]
 });
 
-const YellowIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
 
 // 1. Updated Checkbox (Matches the blue style in screenshot)
 const Checkbox = ({ id, checked, onCheckedChange }) => (
@@ -213,8 +216,46 @@ const ANALYTICS_DATA = {
   ]
 };
 
+const DELAYED_VEHICLES = [
+  { 
+    id: 'MH 12 AB 1234', 
+    reason: 'Vehicle Breakdown', 
+    severity: 'Critical', 
+    location: 'Hinjewadi Phase 1', 
+    coords: [18.5913, 73.7389], 
+    delay: '45 min', 
+    shipment: 'SHP-A1B2C3', 
+    dest: 'Koramangala', 
+    impact: '+2 hrs',
+    loadRequired: 30 
+  },
+  { 
+    id: 'MH 12 CD 5678', 
+    reason: 'Traffic Congestion', 
+    severity: 'High', 
+    location: 'Silk Board Junction', 
+    coords: [18.5156, 73.9168], 
+    delay: '25 min', 
+    shipment: 'SHP-D4E5F6', 
+    dest: 'Electronic City', 
+    impact: '+45 min',
+    loadRequired: 15
+  },
+  { 
+    id: 'MH 12 EF 9012', 
+    reason: 'Accident', 
+    severity: 'Critical', 
+    location: 'Outer Ring Road', 
+    coords: [18.5580, 73.8360],
+    delay: '1 hr 15 min', 
+    shipment: 'SHP-G7H8I9', 
+    dest: 'Whitefield', 
+    impact: '+3 hrs',
+    loadRequired: 60
+  }
+];
 const UNIFIED_FLEET_DATA = [
-  // 1. Critical Heavy Truck (Original)
+  // 1. Critical Heavy Truck with Delay Info
   {
     id: "MH 12 AB 1234",
     driver: "Ramesh Kumar",
@@ -237,23 +278,32 @@ const UNIFIED_FLEET_DATA = [
     healthStatus: "critical",
     nextServiceKm: -200,
     issues: [
-        { id: "i1", description: "Engine overheating", faultCode: "P0217", severity: "critical", detectedAt: "10:30 AM" },
-        { id: "i2", description: "Coolant level low", faultCode: "P0128", severity: "warning", detectedAt: "10:45 AM" }
+      { id: "i1", description: "Engine overheating", faultCode: "P0217", severity: "critical", detectedAt: "10:30 AM" },
+      { id: "i2", description: "Coolant level low", faultCode: "P0128", severity: "warning", detectedAt: "10:45 AM" }
     ],
     scheduledMaintenance: [
-        { id: "sm1", type: "Engine Overhaul", dueDate: "2024-03-20", dueKm: -200, priority: "high", estimatedCost: 45000 },
-        { id: "sm2", type: "Coolant Flush", dueDate: "2024-03-21", dueKm: 0, priority: "medium", estimatedCost: 3500 }
+      { id: "sm1", type: "Engine Overhaul", dueDate: "2024-03-20", dueKm: -200, priority: "high", estimatedCost: 45000 },
+      { id: "sm2", type: "Coolant Flush", dueDate: "2024-03-21", dueKm: 0, priority: "medium", estimatedCost: 3500 }
     ],
     maintenanceHistory: [
-        { id: "h1", date: "2023-12-15", type: "oil_change", description: "Routine Oil Change", cost: 4500, garage: "Tata Service Hinjewadi", invoiceNumber: "INV-998" }
+      { id: "h1", date: "2023-12-15", type: "oil_change", description: "Routine Oil Change", cost: 4500, garage: "Tata Service Hinjewadi", invoiceNumber: "INV-998" }
     ],
     isDelayed: true,
     delayReason: "Vehicle Breakdown",
     needsAssistance: true,
     assistanceIssue: "Engine Failure",
-    assistanceStatus: "Pending"
+    assistanceStatus: "Pending",
+    shipment: "SHP-1001",
+    loadRequired: 35,
+    delay: "48 mins",
+    impact: "+60 mins ETA",
+    severity: "Critical",
+    reason: "Breakdown en route",
+    location: "Hinjewadi Phase 1",
+    dest: "Aundh Chest Hospital"
   },
-  // 2. Medium Truck Warning (Original)
+  
+  // 2. Medium Truck Warning with Delay Info
   {
     id: "MH 12 CD 5678",
     driver: "Vijay Singh",
@@ -277,13 +327,22 @@ const UNIFIED_FLEET_DATA = [
     nextServiceKm: 890,
     issues: [{ id: "i2", description: "Tire pressure low", faultCode: "C0750", severity: "warning", detectedAt: "11:00 AM" }],
     scheduledMaintenance: [
-        { id: "sm3", type: "Wheel Alignment", dueDate: "2024-04-01", dueKm: 800, priority: "medium", estimatedCost: 1200 }
+      { id: "sm3", type: "Wheel Alignment", dueDate: "2024-04-01", dueKm: 800, priority: "medium", estimatedCost: 1200 }
     ],
     maintenanceHistory: [],
     isDelayed: true,
-    needsAssistance: false
+    needsAssistance: false,
+    shipment: "SHP-1002",
+    loadRequired: 40,
+    delay: "22 mins",
+    impact: "+25 mins ETA",
+    severity: "Medium",
+    reason: "Slow movement / tyre issue",
+    location: "Viman Nagar",
+    dest: "Koregaon Park"
   },
-  // 3. Healthy Light Truck (Original)
+  
+  // 3. Healthy Light Truck (Original - No Delay)
   {
     id: "MH 12 IJ 7890",
     driver: "Anil Kapoor",
@@ -311,6 +370,7 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
+  
   // 4. Maintenance Vehicle (Original)
   {
     id: "MH 12 EF 9012",
@@ -341,7 +401,8 @@ const UNIFIED_FLEET_DATA = [
     assistanceIssue: "Battery Failure",
     assistanceStatus: "Dispatched"
   },
-  // 5. Active Heavy Truck - Good Health
+  
+  // 5. Active Heavy Truck - Good Health (Updated)
   {
     id: "MH 14 HG 4521",
     driver: "Vikram Malhotra",
@@ -369,7 +430,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 6. Delayed Light Truck - Traffic
+  
+  // 6. Delayed Light Truck - Traffic with Delay Info
   {
     id: "MH 12 KL 8899",
     driver: "Suresh Raina",
@@ -381,7 +443,7 @@ const UNIFIED_FLEET_DATA = [
     capacity: "1.7 Tonnes",
     lastService: "2023-11-05",
     insuranceExpiry: "2024-11-05",
-    coords: [18.5203, 73.8567], // Near Shivajinagar
+    coords: [18.5203, 73.8567],
     locationName: "Shivajinagar",
     destCoords: [18.4967, 73.9417],
     destinationName: "Hadapsar",
@@ -396,9 +458,18 @@ const UNIFIED_FLEET_DATA = [
     maintenanceHistory: [],
     isDelayed: true,
     delayReason: "Traffic Congestion",
-    needsAssistance: false
+    needsAssistance: false,
+    shipment: "SHP-1003",
+    loadRequired: 20,
+    delay: "35 mins",
+    impact: "+40 mins ETA",
+    severity: "Low",
+    reason: "Traffic congestion",
+    location: "Shivajinagar",
+    dest: "Hadapsar"
   },
-  // 7. Critical Warning - Brake Issue
+  
+  // 7. Critical Warning - Brake Issue (Original)
   {
     id: "MH 12 XZ 1122",
     driver: "Deepak Chahar",
@@ -422,13 +493,14 @@ const UNIFIED_FLEET_DATA = [
     nextServiceKm: 100,
     issues: [{ id: "i5", description: "Brake pads worn", faultCode: "C0035", severity: "warning", detectedAt: "09:00 AM" }],
     scheduledMaintenance: [
-        { id: "sm5", type: "Brake Replacement", dueDate: "2024-02-15", dueKm: 100, priority: "high", estimatedCost: 5000 }
+      { id: "sm5", type: "Brake Replacement", dueDate: "2024-02-15", dueKm: 100, priority: "high", estimatedCost: 5000 }
     ],
     maintenanceHistory: [],
     isDelayed: false,
     needsAssistance: false
   },
-  // 8. Idle/Inactive Vehicle
+  
+  // 8. Idle/Inactive Vehicle (Original)
   {
     id: "MH 14 BN 6677",
     driver: "Rajesh Koothrappali",
@@ -456,7 +528,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 9. Active - Cold Chain
+  
+  // 9. Active - Cold Chain (Original)
   {
     id: "MH 12 CC 3344",
     driver: "Manoj Bajpayee",
@@ -484,7 +557,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 10. Breakdown - Tyre Burst
+  
+  // 10. Breakdown - Tyre Burst with Delay Info
   {
     id: "MH 12 YY 5500",
     driver: "Ishant Sharma",
@@ -513,9 +587,18 @@ const UNIFIED_FLEET_DATA = [
     delayReason: "Tyre Burst",
     needsAssistance: true,
     assistanceIssue: "Tyre Replacement",
-    assistanceStatus: "Pending"
+    assistanceStatus: "Pending",
+    shipment: "SHP-1004",
+    loadRequired: 60,
+    delay: "55 mins",
+    impact: "+90 mins ETA",
+    severity: "Critical",
+    reason: "Tyre burst",
+    location: "Hadapsar",
+    dest: "Delivery Halted"
   },
-  // 11. Active - Electric LCV
+  
+  // 11. Active - Electric LCV (Updated)
   {
     id: "MH 12 EV 9988",
     driver: "Pooja Hegde",
@@ -543,7 +626,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 12. Maintenance - Scheduled
+  
+  // 12. Maintenance - Scheduled (Original)
   {
     id: "MH 14 ZZ 2211",
     driver: "K. L. Rahul",
@@ -567,13 +651,14 @@ const UNIFIED_FLEET_DATA = [
     nextServiceKm: 0,
     issues: [],
     scheduledMaintenance: [
-        { id: "sm6", type: "Quarterly Service", dueDate: "2024-02-12", dueKm: 0, priority: "medium", estimatedCost: 4000 }
+      { id: "sm6", type: "Quarterly Service", dueDate: "2024-02-12", dueKm: 0, priority: "medium", estimatedCost: 4000 }
     ],
     maintenanceHistory: [],
     isDelayed: false,
     needsAssistance: false
   },
-  // 13. Active - Long Haul
+  
+  // 13. Active - Long Haul (Original)
   {
     id: "MH 12 LH 7766",
     driver: "Jasprit Bumrah",
@@ -585,7 +670,7 @@ const UNIFIED_FLEET_DATA = [
     capacity: "49 Tonnes",
     lastService: "2023-11-30",
     insuranceExpiry: "2024-11-30",
-    coords: [18.4230, 73.8690], // Katraj Tunnel area
+    coords: [18.4230, 73.8690],
     locationName: "Katraj Tunnel",
     destCoords: [19.0760, 72.8777],
     destinationName: "Mumbai Port",
@@ -601,7 +686,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 14. Delayed - Documentation Check
+  
+  // 14. Delayed - Documentation Check with Delay Info
   {
     id: "MH 12 QQ 4433",
     driver: "Shikhar Dhawan",
@@ -628,9 +714,18 @@ const UNIFIED_FLEET_DATA = [
     maintenanceHistory: [],
     isDelayed: true,
     delayReason: "RTO Check",
-    needsAssistance: false
+    needsAssistance: false,
+    shipment: "SHP-1005",
+    loadRequired: 30,
+    delay: "18 mins",
+    impact: "+20 mins ETA",
+    severity: "Low",
+    reason: "RTO documentation check",
+    location: "Yerwada",
+    dest: "Wakad"
   },
-  // 15. Active - City Logistics
+  
+  // 15. Active - City Logistics (Updated)
   {
     id: "MH 12 CL 1212",
     driver: "Hardik Pandya",
@@ -658,7 +753,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 16. Warning - Oil Leak
+  
+  // 16. Warning - Oil Leak (Original)
   {
     id: "MH 14 WW 8989",
     driver: "Ravindra Jadeja",
@@ -670,7 +766,7 @@ const UNIFIED_FLEET_DATA = [
     capacity: "55 Tonnes",
     lastService: "2023-09-01",
     insuranceExpiry: "2024-09-01",
-    coords: [18.7323, 73.6749], // Talegaon
+    coords: [18.7323, 73.6749],
     locationName: "Talegaon",
     destCoords: [18.6298, 73.7997],
     destinationName: "Chinchwad",
@@ -682,13 +778,14 @@ const UNIFIED_FLEET_DATA = [
     nextServiceKm: 200,
     issues: [{ id: "i7", description: "Minor Oil Leak", faultCode: "P0520", severity: "warning", detectedAt: "07:30 AM" }],
     scheduledMaintenance: [
-        { id: "sm7", type: "Gasket Replacement", dueDate: "2024-02-18", dueKm: 200, priority: "medium", estimatedCost: 2500 }
+      { id: "sm7", type: "Gasket Replacement", dueDate: "2024-02-18", dueKm: 200, priority: "medium", estimatedCost: 2500 }
     ],
     maintenanceHistory: [],
     isDelayed: false,
     needsAssistance: false
   },
-  // 17. Active - Empty Return
+  
+  // 17. Active - Empty Return (Updated)
   {
     id: "MH 12 ER 3434",
     driver: "Rohit Sharma",
@@ -700,7 +797,7 @@ const UNIFIED_FLEET_DATA = [
     capacity: "12 Tonnes",
     lastService: "2023-12-10",
     insuranceExpiry: "2024-12-10",
-    coords: [18.6161, 73.7286], // Marunji
+    coords: [18.6161, 73.7286],
     locationName: "Marunji",
     destCoords: [18.5913, 73.7389],
     destinationName: "Hinjewadi Warehouse",
@@ -716,7 +813,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 18. Critical - Transmission
+  
+  // 18. Critical - Transmission with Delay Info
   {
     id: "MH 12 TR 6767",
     driver: "Virat Kohli",
@@ -728,7 +826,7 @@ const UNIFIED_FLEET_DATA = [
     capacity: "28 Tonnes",
     lastService: "2023-07-20",
     insuranceExpiry: "2024-07-20",
-    coords: [18.4697, 73.8037], // Dhayari
+    coords: [18.4697, 73.8037],
     locationName: "Dhayari",
     destCoords: null,
     destinationName: null,
@@ -740,16 +838,25 @@ const UNIFIED_FLEET_DATA = [
     nextServiceKm: -50,
     issues: [{ id: "i8", description: "Transmission Failure", faultCode: "P0700", severity: "critical", detectedAt: "Yesterday" }],
     scheduledMaintenance: [
-        { id: "sm8", type: "Transmission Overhaul", dueDate: "2024-02-10", dueKm: -50, priority: "high", estimatedCost: 60000 }
+      { id: "sm8", type: "Transmission Overhaul", dueDate: "2024-02-10", dueKm: -50, priority: "high", estimatedCost: 60000 }
     ],
     maintenanceHistory: [],
     isDelayed: true,
     delayReason: "Breakdown",
     needsAssistance: true,
     assistanceIssue: "Transmission Stuck",
-    assistanceStatus: "Pending"
+    assistanceStatus: "Pending",
+    shipment: "SHP-1007",
+    loadRequired: 45,
+    delay: "70 mins",
+    impact: "+120 mins ETA",
+    severity: "Critical",
+    reason: "Transmission failure",
+    location: "Dhayari",
+    dest: "Route Stopped"
   },
-  // 19. Active - Pharma Logistics
+  
+  // 19. Active - Pharma Logistics (Original)
   {
     id: "MH 14 PL 2323",
     driver: "Rishabh Pant",
@@ -761,7 +868,7 @@ const UNIFIED_FLEET_DATA = [
     capacity: "1.5 Tonnes",
     lastService: "2023-12-05",
     insuranceExpiry: "2024-12-05",
-    coords: [18.6633, 73.8050], // Moshi
+    coords: [18.6633, 73.8050],
     locationName: "Moshi",
     destCoords: [18.6261, 73.8139],
     destinationName: "Bhosari Pharma Unit",
@@ -777,7 +884,8 @@ const UNIFIED_FLEET_DATA = [
     isDelayed: false,
     needsAssistance: false
   },
-  // 20. Warning - Battery
+  
+  // 20. Warning - Battery (Original)
   {
     id: "MH 12 BA 9090",
     driver: "Shreyas Iyer",
@@ -789,7 +897,7 @@ const UNIFIED_FLEET_DATA = [
     capacity: "1 Tonne",
     lastService: "2023-11-15",
     insuranceExpiry: "2024-11-15",
-    coords: [18.5284, 73.8739], // Pune Station Area
+    coords: [18.5284, 73.8739],
     locationName: "Pune Station",
     destCoords: [18.5074, 73.8077],
     destinationName: "Kothrud",
@@ -801,13 +909,14 @@ const UNIFIED_FLEET_DATA = [
     nextServiceKm: 900,
     issues: [{ id: "i9", description: "Low Battery Voltage", faultCode: "P0560", severity: "warning", detectedAt: "08:00 AM" }],
     scheduledMaintenance: [
-        { id: "sm9", type: "Battery Check/Replace", dueDate: "2024-02-25", dueKm: 900, priority: "medium", estimatedCost: 4000 }
+      { id: "sm9", type: "Battery Check/Replace", dueDate: "2024-02-25", dueKm: 900, priority: "medium", estimatedCost: 4000 }
     ],
     maintenanceHistory: [],
     isDelayed: false,
     needsAssistance: false
   },
-  // 21. Active - Express Cargo
+  
+  // 21. Active - Express Cargo (Updated)
   {
     id: "MH 12 EX 5656",
     driver: "Krunal Pandya",
@@ -834,271 +943,16 @@ const UNIFIED_FLEET_DATA = [
     maintenanceHistory: [],
     isDelayed: false,
     needsAssistance: false
-  },
-  // 22. Inactive - Driver on Leave
-  {
-    id: "MH 14 DL 1100",
-    driver: "Ajinkya Rahane",
-    type: "Heavy Truck",
-    vin: "3DWBH63GTGK321305",
-    makeModel: "Tata LPT 3718",
-    year: "2018",
-    fuelType: "Diesel",
-    capacity: "37 Tonnes",
-    lastService: "2023-09-20",
-    insuranceExpiry: "2024-09-20",
-    coords: [18.6298, 73.7997],
-    locationName: "Chinchwad Parking",
-    destCoords: null,
-    destinationName: null,
-    routeUpdates: [],
-    status: "inactive",
-    capacityFree: 100,
-    healthScore: 80,
-    healthStatus: "normal",
-    nextServiceKm: 1500,
-    issues: [],
-    scheduledMaintenance: [],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
-  },
-  // 23. Active - Heavy Load
-  {
-    id: "MH 12 HL 7878",
-    driver: "Mohammed Shami",
-    type: "Heavy Truck",
-    vin: "4EXBH74HUHL432416",
-    makeModel: "Ashok Leyland 4825",
-    year: "2023",
-    fuelType: "Diesel",
-    capacity: "48 Tonnes",
-    lastService: "2024-01-10",
-    insuranceExpiry: "2025-01-10",
-    coords: [18.4416, 73.8242], // Katraj Bypass
-    locationName: "Katraj Bypass",
-    destCoords: [18.6504, 73.7786],
-    destinationName: "Akurdi",
-    routeUpdates: [],
-    status: "active",
-    capacityFree: 5,
-    healthScore: 95,
-    healthStatus: "normal",
-    nextServiceKm: 5500,
-    issues: [],
-    scheduledMaintenance: [],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
-  },
-  // 24. Maintenance - Accident Repair
-  {
-    id: "MH 12 AR 4545",
-    driver: "Axar Patel",
-    type: "Medium Truck",
-    vin: "5FYBH85IVIM543527",
-    makeModel: "Tata 1109",
-    year: "2019",
-    fuelType: "Diesel",
-    capacity: "11 Tonnes",
-    lastService: "2023-08-05",
-    insuranceExpiry: "2024-08-05",
-    coords: [18.5204, 73.8567], // Central Pune Garage
-    locationName: "Central Workshop",
-    destCoords: null,
-    destinationName: null,
-    routeUpdates: [],
-    status: "maintenance",
-    capacityFree: 100,
-    healthScore: 10,
-    healthStatus: "critical",
-    nextServiceKm: 0,
-    issues: [{ id: "i10", description: "Bumper Damage & Radiator Leak", faultCode: "ACC-001", severity: "critical", detectedAt: "2 days ago" }],
-    scheduledMaintenance: [],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
-  },
-  // 25. Active - E-Commerce
-  {
-    id: "MH 12 EC 9900",
-    driver: "Sanju Samson",
-    type: "Light Truck",
-    vin: "6GZBH96JWJN654638",
-    makeModel: "Maruti Suzuki Super Carry",
-    year: "2023",
-    fuelType: "CNG",
-    capacity: "0.7 Tonnes",
-    lastService: "2023-12-25",
-    insuranceExpiry: "2024-12-25",
-    coords: [18.5635, 73.8075], // Aundh
-    locationName: "Aundh",
-    destCoords: [18.5590, 73.7868],
-    destinationName: "Baner",
-    routeUpdates: [],
-    status: "active",
-    capacityFree: 30,
-    healthScore: 93,
-    healthStatus: "normal",
-    nextServiceKm: 2200,
-    issues: [],
-    scheduledMaintenance: [],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
-  },
-  // 26. Active - Water Tanker
-  {
-    id: "MH 12 WT 2121",
-    driver: "Yuzvendra Chahal",
-    type: "Heavy Truck",
-    vin: "7H0BH07KXKO765749",
-    makeModel: "Tata 1613",
-    year: "2017",
-    fuelType: "Diesel",
-    capacity: "16 Tonnes (Water)",
-    lastService: "2023-11-10",
-    insuranceExpiry: "2024-11-10",
-    coords: [18.4750, 73.8900], // Undri
-    locationName: "Undri",
-    destCoords: [18.4900, 73.9000],
-    destinationName: "Wanowrie",
-    routeUpdates: [],
-    status: "active",
-    capacityFree: 0,
-    healthScore: 68,
-    healthStatus: "warning",
-    nextServiceKm: 500,
-    issues: [{ id: "i11", description: "Suspension noise", faultCode: "C0200", severity: "warning", detectedAt: "Yesterday" }],
-    scheduledMaintenance: [
-        { id: "sm10", type: "Suspension Check", dueDate: "2024-03-01", dueKm: 500, priority: "low", estimatedCost: 3000 }
-    ],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
-  },
-  // 27. Delayed - Client Issue
-  {
-    id: "MH 14 CI 3434",
-    driver: "Kuldeep Yadav",
-    type: "Medium Truck",
-    vin: "8I1BH18LYLP876850",
-    makeModel: "Eicher Pro 3019",
-    year: "2021",
-    fuelType: "Diesel",
-    capacity: "19 Tonnes",
-    lastService: "2023-10-15",
-    insuranceExpiry: "2024-10-15",
-    coords: [18.6504, 73.7786], // Akurdi
-    locationName: "Akurdi",
-    destCoords: [18.6298, 73.7997],
-    destinationName: "Chinchwad",
-    routeUpdates: [{ time: "08:30 AM", type: "alert", title: "Loading Delay", desc: "Client goods not ready for pickup." }],
-    status: "active",
-    capacityFree: 100,
-    healthScore: 86,
-    healthStatus: "normal",
-    nextServiceKm: 2800,
-    issues: [],
-    scheduledMaintenance: [],
-    maintenanceHistory: [],
-    isDelayed: true,
-    delayReason: "Client Delay at Pickup",
-    needsAssistance: false
-  },
-  // 28. Active - FMCG
-  {
-    id: "MH 12 FM 6565",
-    driver: "Shardul Thakur",
-    type: "Heavy Truck",
-    vin: "9J2BH29MZMQ987961",
-    makeModel: "Tata Signa 2818",
-    year: "2022",
-    fuelType: "Diesel",
-    capacity: "28 Tonnes",
-    lastService: "2024-01-08",
-    insuranceExpiry: "2025-01-08",
-    coords: [18.5983, 73.7638], // Wakad
-    locationName: "Wakad",
-    destCoords: [19.0330, 73.0297],
-    destinationName: "Navi Mumbai",
-    routeUpdates: [],
-    status: "active",
-    capacityFree: 10,
-    healthScore: 93,
-    healthStatus: "normal",
-    nextServiceKm: 4000,
-    issues: [],
-    scheduledMaintenance: [],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
-  },
-  // 29. Active - Construction Material
-  {
-    id: "MH 12 CM 8787",
-    driver: "Mohammed Siraj",
-    type: "Heavy Truck",
-    vin: "0K3BH30NANS098072",
-    makeModel: "BharatBenz 2823C (Tipper)",
-    year: "2021",
-    fuelType: "Diesel",
-    capacity: "28 Tonnes",
-    lastService: "2023-11-25",
-    insuranceExpiry: "2024-11-25",
-    coords: [18.5400, 73.7500], // Pashan
-    locationName: "Pashan Sus Road",
-    destCoords: [18.5590, 73.7868],
-    destinationName: "Baner Construction Site",
-    routeUpdates: [],
-    status: "active",
-    capacityFree: 0,
-    healthScore: 75,
-    healthStatus: "normal",
-    nextServiceKm: 1500,
-    issues: [],
-    scheduledMaintenance: [],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
-  },
-  // 30. Warning - Overheating History
-  {
-    id: "MH 14 OH 5454",
-    driver: "Washington Sundar",
-    type: "Medium Truck",
-    vin: "1L4BH41OBOT109183",
-    makeModel: "Tata 1212 LPT",
-    year: "2018",
-    fuelType: "Diesel",
-    capacity: "12 Tonnes",
-    lastService: "2023-09-30",
-    insuranceExpiry: "2024-09-30",
-    coords: [18.6000, 73.8500], // Vishrantwadi
-    locationName: "Vishrantwadi",
-    destCoords: [18.5293, 73.8505],
-    destinationName: "Shivajinagar",
-    routeUpdates: [],
-    status: "active",
-    capacityFree: 40,
-    healthScore: 50,
-    healthStatus: "warning",
-    nextServiceKm: 300,
-    issues: [{ id: "i12", description: "Engine Temp High", faultCode: "P0217", severity: "warning", detectedAt: "1 hour ago" }],
-    scheduledMaintenance: [
-        { id: "sm11", type: "Coolant Flush & Check", dueDate: "2024-02-20", dueKm: 300, priority: "high", estimatedCost: 2000 }
-    ],
-    maintenanceHistory: [],
-    isDelayed: false,
-    needsAssistance: false
   }
-];
+]
 
 // Candidates for the algorithm (must match IDs above)
 const FLEET_POOL = [
-  { id: 'MH 12 IJ 7890', status: 'available', coords: [18.5700, 73.7500], capacityFree: 65 },
-  { id: 'MH 12 AB 1234', status: 'available', coords: [18.5913, 73.7389], capacityFree: 30 },
-  { id: 'MH 12 CD 5678', status: 'light load', coords: [18.5679, 73.9143], capacityFree: 45 },
+  { id: 'MH 12 IJ 7890', status: 'available', coords: [18.5074, 73.8077], capacityFree: 65 },
+  { id: 'MH 14 HG 4521', status: 'available', coords: [18.6298, 73.7997], capacityFree: 10 },
+  { id: 'MH 12 KL 8899', status: 'light load', coords: [18.5203, 73.8567], capacityFree: 50 },
+  { id: 'MH 12 CC 3344', status: 'available', coords: [18.5590, 73.7868], capacityFree: 0 },
+  { id: 'MH 12 EV 9988', status: 'available', coords: [18.5314, 73.8446], capacityFree: 40 },
 ];
 
 // --- ALGORITHM LOGIC ---
@@ -1702,7 +1556,45 @@ const ReallocationView = ({ fleet, setFleet }) => {
 
   const selectedVehicle = delayedVehicles.find(v => v.id === selectedDelayedId);
 
-  // *** IMPORTANT: REPLACE WITH YOUR RAW 40-CHAR ORS API KEY ***
+  // --- UPDATED: Smaller Icon Size (32x32) ---
+  const createTruckIcon = (color) => {
+    const maskId = `truck-mask-${Math.random().toString(36).substr(2, 9)}`;
+
+    return new L.DivIcon({
+      className: 'custom-truck-icon',
+      html: `
+        <div style="filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.3)); transform: translateY(-10%);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <mask id="${maskId}">
+                <rect width="100%" height="100%" fill="white"/>
+                <circle cx="6" cy="19" r="3.2" fill="black"/>
+                <circle cx="18" cy="19" r="3.2" fill="black"/>
+              </mask>
+            </defs>
+            <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z" 
+                  fill="${color}" 
+                  mask="url(#${maskId})"
+                  stroke="transparent" 
+                  stroke-width="1.5"/>
+            
+            <circle cx="6" cy="19" r="2.2" fill="${color}" />
+            <circle cx="18" cy="19" r="2.2" fill="${color}" />
+            
+            <path d="M17 10h2l1.5 2h-3.5V10z" fill="white" fill-opacity="0.6"/>
+          </svg>
+        </div>
+      `,
+      iconSize: [32, 32], // Reduced from 48
+      iconAnchor: [16, 32], // Adjusted anchor
+      popupAnchor: [0, -32]
+    });
+  };
+
+  const RedTruckIcon = createTruckIcon('#ef4444');   
+  const GreenTruckIcon = createTruckIcon('#10b981'); 
+
+  // --- API Key ---
   const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZmY2JjMTU3ZWRhZTRlZmJhZGIzYjM4Zjk1YmZkMWZjIiwiaCI6Im11cm11cjY0In0='; 
 
   useEffect(() => {
@@ -1721,30 +1613,24 @@ const ReallocationView = ({ fleet, setFleet }) => {
     }
   }, [selectedDelayedId, selectedVehicle]);
 
-  const fetchRoute = async (start, end) => {
-      if (!ORS_API_KEY || ORS_API_KEY === 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZmY2JjMTU3ZWRhZTRlZmJhZGIzYjM4Zjk1YmZkMWZjIiwiaCI6Im11cm11cjY0In0=') {
-          console.error("Please set your OpenRouteService API Key");
-          return;
-      }
-      // ORS expects [lng, lat] structure
-      const startLngLat = `${start[1]},${start[0]}`;
-      const endLngLat = `${end[1]},${end[0]}`;
+  const fetchRoute = async (startCoords, endCoords) => {
+    const startLngLat = `${startCoords[1]},${startCoords[0]}`;
+    const endLngLat = `${endCoords[1]},${endCoords[0]}`;
 
-      try {
-        const response = await fetch(
-          `https://api.openrouteservice.org/v2/directions/driving-car?start=${startLngLat}&end=${endLngLat}`,
-          { headers: { 'Authorization': ORS_API_KEY } }
-        );
-        const data = await response.json();
+    try {
+      const response = await fetch(
+        `https://api.openrouteservice.org/v2/directions/driving-car?start=${startLngLat}&end=${endLngLat}`,
+        { headers: { 'Authorization': ORS_API_KEY } }
+      );
+      const data = await response.json();
 
-        if (data.features && data.features.length > 0) {
-          // Swap back to [lat, lng] for Leaflet Polyline
-          const leafletCoords = data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-          setRouteCoordinates(leafletCoords);
-        }
-      } catch (error) {
-        console.error("Error fetching route from ORS:", error);
+      if (data.features && data.features.length > 0) {
+        const leafletCoords = data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+        setRouteCoordinates(leafletCoords);
       }
+    } catch (error) {
+      console.error("Error fetching route:", error);
+    }
   };
 
   const handleApprove = () => {
@@ -1754,16 +1640,16 @@ const ReallocationView = ({ fleet, setFleet }) => {
     
     let progress = 0;
     const interval = setInterval(() => {
-        progress += 10; // Faster for demo
+        progress += 20; 
         setProgressState(prev => ({ ...prev, [selectedDelayedId]: progress }));
         
         if (progress >= 100) {
             clearInterval(interval);
             setVehicleStatus(prev => ({ ...prev, [selectedDelayedId]: 'Resolved' }));
             
-            // Fetch route after approval
             const delayed = delayedVehicles.find(v => v.id === selectedDelayedId);
             const candidate = candidates.find(c => c.id === selectedCandidateId);
+            
             if(delayed && candidate) {
                 fetchRoute(delayed.coords, candidate.coords);
             }
@@ -1776,6 +1662,7 @@ const ReallocationView = ({ fleet, setFleet }) => {
 
   return (
     <div className="flex gap-6 relative h-[calc(100vh-140px)]">
+      {/* LEFT PANEL: List */}
       <div className="w-1/3 flex flex-col gap-4 h-full">
         <h3 className="font-bold text-gray-700 text-sm uppercase px-1 mt-2">Delayed Vehicles</h3>
         <div className="space-y-3 overflow-y-auto pr-1 flex-1">
@@ -1794,14 +1681,10 @@ const ReallocationView = ({ fleet, setFleet }) => {
                  }`}
                >
                   <div className="flex justify-between items-start mb-2">
-                     <div className={`font-bold flex items-center gap-2 ${isSelected ? 'text-blue-700' : 'text-gray-800'}`}>
-                       <Truck size={16} className={v.severity === 'Critical' ? 'text-red-500' : 'text-amber-500'}/> {v.id}
-                     </div>
-                     {status === 'Pending' ? (
-                        <StatusBadge type={v.severity}/>
-                     ) : (
-                        <StatusBadge type={status}/>
-                     )}
+                      <div className={`font-bold flex items-center gap-2 ${isSelected ? 'text-blue-700' : 'text-gray-800'}`}>
+                        <Truck size={16} className={v.severity === 'Critical' ? 'text-red-500' : 'text-amber-500'}/> {v.id}
+                      </div>
+                      <StatusBadge type={status === 'Pending' ? v.severity : status}/>
                   </div>
                   
                   {status === 'Processing' && (
@@ -1814,17 +1697,16 @@ const ReallocationView = ({ fleet, setFleet }) => {
                     {v.reason}
                   </div>
                   <div className="text-sm text-gray-600 space-y-1">
-                     <div className="flex items-center gap-2"><MapPin size={12}/> {v.location}</div>
-                     <div className="flex items-center gap-2"><Clock size={12}/> Delayed: {v.delay}</div>
-                     <div className="flex items-center gap-2"><ArrowRightLeft size={12}/> {v.shipment} → {v.dest}</div>
+                      <div className="flex items-center gap-2"><MapPin size={12}/> {v.location}</div>
+                      <div className="flex items-center gap-2"><Clock size={12}/> Delayed: {v.delay}</div>
                   </div>
-                  <div className="mt-3 text-xs text-red-600 font-bold">ETA Impact: {v.impact}</div>
                </div>
              );
            })}
         </div>
       </div>
 
+      {/* RIGHT PANEL */}
       <div className="w-2/3 bg-white rounded-lg border border-gray-200 p-6 flex flex-col h-full">
          <div className="flex justify-between border-b pb-4 mb-4 flex-shrink-0">
            <div>
@@ -1832,7 +1714,7 @@ const ReallocationView = ({ fleet, setFleet }) => {
              <div className="font-bold text-lg flex items-center gap-2">
                {selectedVehicle?.id} 
                <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                 Req. Load: {selectedVehicle?.loadRequired}%
+                 Req: {selectedVehicle?.loadRequired}%
                </span>
              </div>
            </div>
@@ -1848,6 +1730,7 @@ const ReallocationView = ({ fleet, setFleet }) => {
              <p className="text-xs text-gray-500">Ranked by proximity, capacity, and current status</p>
            </div>
            
+           {/* BUTTONS IN HEADER */}
            {currentStatus !== 'Resolved' && (
                 <div className="flex gap-2">
                     <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded text-sm font-medium flex items-center gap-2 hover:bg-gray-200">
@@ -1865,53 +1748,55 @@ const ReallocationView = ({ fleet, setFleet }) => {
            )}
          </div>
 
-         <div className="space-y-3 overflow-y-auto flex-1 pr-1 relative">
+         <div className="space-y-3 overflow-y-auto flex-1 pr-1 relative bg-gray-50 rounded-lg border border-gray-100">
            
-           {/* MAP ADDED HERE - ONLY ON APPROVAL - REMOVED TEXT BLOCK */}
+           {/* MAP VIEW (Only shows when Resolved) */}
            {currentStatus === 'Resolved' ? (
-                <div className="h-full rounded-lg overflow-hidden border border-gray-200 relative z-0">
+                <div className="h-full w-full relative z-0">
                     <MapContainer center={PUNE_CENTER} zoom={11} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                         <TileLayer attribution='&copy; OSM & OpenRouteService' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         
-                        {/* Draw Delayed Vehicle */}
+                        {/* DELAYED TRUCK (Red Icon) */}
                         {selectedVehicle && (
-                            <Marker position={selectedVehicle.coords} icon={RedIcon}>
+                            <Marker position={selectedVehicle.coords} icon={RedTruckIcon}>
                                 <Popup>Delayed: {selectedVehicle.id}</Popup>
                             </Marker>
                         )}
 
-                        {/* Draw Candidate Vehicle */}
+                        {/* RESCUE TRUCK (Green Icon) */}
                         {selectedCandidateId && candidates.find(c => c.id === selectedCandidateId) && (
-                            <Marker position={candidates.find(c => c.id === selectedCandidateId).coords} icon={GreenIcon}>
-                                <Popup>Candidate: {selectedCandidateId}</Popup>
+                            <Marker position={candidates.find(c => c.id === selectedCandidateId).coords} icon={GreenTruckIcon}>
+                                <Popup>Rescue: {selectedCandidateId}</Popup>
                             </Marker>
                         )}
 
-                        {/* Draw Path from ORS Data */}
+                        {/* ROUTE LINE */}
                         {routeCoordinates.length > 0 && (
-                            <Polyline 
+                            <>
+                                <Polyline 
                                     positions={routeCoordinates} 
-                                    pathOptions={{ color: 'blue', weight: 4, opacity: 0.7 }} 
-                            />
-                        )}
-                        
-                        {/* Fit map to points */}
-                        {selectedVehicle && selectedCandidateId && candidates.find(c => c.id === selectedCandidateId) && (
-                            <PathFitter p1={selectedVehicle.coords} p2={candidates.find(c => c.id === selectedCandidateId).coords} />
+                                    pathOptions={{ color: '#2563eb', weight: 5, opacity: 0.8, lineCap: 'round' }} 
+                                />
+                                <PathFitter p1={routeCoordinates[0]} p2={routeCoordinates[routeCoordinates.length - 1]} />
+                            </>
                         )}
                     </MapContainer>
+                    
+                    {/* INFO BOX REMOVED HERE AS PER REQUEST */}
                 </div>
            ) : (
-                candidates.length > 0 ? candidates.map((c, idx) => {
+                // CANDIDATE LIST (Shows when Pending)
+                <div className="p-2 space-y-3">
+                {candidates.length > 0 ? candidates.map((c, idx) => {
                     const isCandidateSelected = selectedCandidateId === c.id;
                     return (
                         <div 
                             key={c.id} 
                             onClick={() => currentStatus === 'Pending' && setSelectedCandidateId(c.id)}
-                            className={`p-4 rounded-lg border flex items-center justify-between transition-all cursor-pointer ${
+                            className={`p-4 rounded-lg border flex items-center justify-between transition-all cursor-pointer bg-white ${
                                 isCandidateSelected 
-                                    ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-200 shadow-sm' 
-                                    : 'bg-white border-gray-100 opacity-90 hover:opacity-100 hover:border-gray-300'
+                                    ? 'border-blue-400 ring-1 ring-blue-200 shadow-sm' 
+                                    : 'border-gray-200 hover:border-gray-300'
                             } ${currentStatus === 'Processing' && !isCandidateSelected ? 'opacity-40 pointer-events-none' : ''}`}
                         >
                         <div className="flex items-center gap-4">
@@ -1954,11 +1839,12 @@ const ReallocationView = ({ fleet, setFleet }) => {
                         </div>
                     );
                 }) : (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                    <div className="h-64 flex flex-col items-center justify-center text-gray-400">
                         <AlertTriangle size={48} className="mb-2 opacity-20"/>
-                        <p>No suitable candidates found within range.</p>
+                        <p>No suitable candidates found.</p>
                     </div>
-                )
+                )}
+                </div>
            )}
          </div>
       </div>
